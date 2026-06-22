@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        /* ── Surfaces ── */
+        --bg-base: #f4f7f7;
+        --bg-panel: #ffffff;
+        --bg-card: #ffffff;
+        --bg-elevated: #ffffff;
+        --bg-sunken: #edf2f2;
+        --bg-input: #f8fafa;
+        --bg-hover: #e8f0f0;
+        --bg-active: #dceaea;
+        --bg-grad-1: #ffffff;
+        --bg-grad-2: #f4f7f7;
+
+        /* ── Borders ── */
+        --border-subtle: #d8e4e4;
+        --border-strong: #b4cccc;
+        --border-focus: #0d7377;
+
+        /* ── Text ── */
+        --text-main: #0a1e1e;
+        --text-muted: #3b5858;
+        --text-faint: #7a9696;
+        --text-inverse: #ffffff;
+
+        /* ── Accent: Deep Teal ── */
+        --accent-primary: #0b6b6f;
+        --accent-secondary: #094f52;
+        --accent-primary-hover: #0d8a8e;
+        --accent-glow: rgba(11, 107, 111, 0.15);
+        --accent-gradient: linear-gradient(135deg, #0b6b6f 0%, #0d8a8e 100%);
+        --accent-btn-text: #ffffff;
+
+        /* ── Status ── */
+        --status-success: #0f8a5f;
+        --status-success-text: #065f3e;
+        --status-success-bg: rgba(15, 138, 95, 0.08);
+        --status-warning: #c77d0a;
+        --status-warning-text: #8a5400;
+        --status-warning-bg: rgba(199, 125, 10, 0.08);
+        --status-danger: #c43030;
+        --status-danger-text: #9a1c1c;
+        --status-danger-bg: rgba(196, 48, 48, 0.06);
+        --status-info: #1a73b5;
+        --status-info-bg: rgba(26, 115, 181, 0.06);
+
+        /* ── Shadows ── */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+        --shadow-color: rgba(0, 0, 0, 0.08);
+
+        /* ── Radii ── */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+
+        /* ── Sidebar ── */
+        --sidebar-width: 240px;
+        --sidebar-collapsed: 64px;
+    }
+
+    html.dark {
+        /* ── Surfaces: Deep charcoal with depth layers ── */
+        --bg-base: #0a0e10;
+        --bg-panel: #12171a;
+        --bg-card: #161c20;
+        --bg-elevated: #1c2328;
+        --bg-sunken: #080b0d;
+        --bg-input: #1a2025;
+        --bg-hover: #1e262b;
+        --bg-active: #243038;
+        --bg-grad-1: #0a0e10;
+        --bg-grad-2: #0e1316;
+
+        /* ── Borders ── */
+        --border-subtle: #1e282e;
+        --border-strong: #2c3a42;
+        --border-focus: #2dd4bf;
+
+        /* ── Text ── */
+        --text-main: #e8f0f2;
+        --text-muted: #8da4ac;
+        --text-faint: #506068;
+        --text-inverse: #0a0e10;
+
+        /* ── Accent: Bright Teal ── */
+        --accent-primary: #2dd4bf;
+        --accent-secondary: #14b8a6;
+        --accent-primary-hover: #5eead4;
+        --accent-glow: rgba(45, 212, 191, 0.2);
+        --accent-gradient: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+        --accent-btn-text: #042f2e;
+
+        /* ── Status ── */
+        --status-success: #34d399;
+        --status-success-text: #6ee7b7;
+        --status-success-bg: rgba(52, 211, 153, 0.1);
+        --status-warning: #fbbf24;
+        --status-warning-text: #fcd34d;
+        --status-warning-bg: rgba(251, 191, 36, 0.1);
+        --status-danger: #f87171;
+        --status-danger-text: #fca5a5;
+        --status-danger-bg: rgba(248, 113, 113, 0.08);
+        --status-info: #60a5fa;
+        --status-info-bg: rgba(96, 165, 250, 0.08);
+
+        /* ── Shadows ── */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    transition: background-color 0.25s ease, color 0.25s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: -0.011em;
+}
