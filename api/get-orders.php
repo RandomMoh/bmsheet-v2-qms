@@ -16,7 +16,7 @@ while ($ur = mysqli_fetch_assoc($ures)) {
     $umap[trim($ur['dusername'])] = trim($ur['dname']);
 }
 
-$query = mysqli_query($conn, "SELECT * FROM `order` ORDER BY id DESC LIMIT 500");
+$query = mysqli_query($conn, "SELECT * FROM `order` ORDER BY id DESC LIMIT 3000");
 
 if (!$query) {
     echo json_encode(["status" => "error", "message" => "SQL Error: " . mysqli_error($conn)]);

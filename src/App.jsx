@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const Login = lazy(() => import('./pages/Login'))
 const Admin = lazy(() => import('./pages/Admin'))
 const CSRDashboard = lazy(() => import('./pages/User'))
+const Dev = lazy(() => import('./pages/Dev'))
 import CursorTrail from './CursorTrail'
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/user" element={<CSRDashboard />} />
+            <Route path="/dev" element={<Dev />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

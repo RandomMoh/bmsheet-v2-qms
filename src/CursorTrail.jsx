@@ -1,64 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function CursorTrail() {
   const dotRef = useRef(null);
   const ringRef = useRef(null);
-  const pos = useRef({ x: -100, y: -100 });
+  
+  // Physics state
   const target = useRef({ x: -100, y: -100 });
-  const [hovered, setHovered] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [clicking, setClicking] = useState(false);
+  const pos = useRef({ x: -100, y: -100 }); // Ring position
+  const dotPos = useRef({ x: -100, y: -100 }); // Dot position
+  
+  // Interaction state
+  const isHovered = useRef(false);
+  const isClicking = useRef(false);
+  const isHidden = useRef(false);
 
   useEffect(() => {
-    // Hide on touch devices
-    if ('ontouchstart' in window) return;
+    if (typeof window === 'undefined' || 'ontouchstart' in window) return;
 
     const onMove = (e) => {
       target.current = { x: e.clientX, y: e.clientY };
-      setHidden(false);
+      isHidden.current = false;
     };
 
-    const onEnter = () => setHidden(false);
-    const onLeave = () => setHidden(true);
-    const onDown = () => setClicking(true);
-    const onUp = () => setClicking(false);
+    const onEnter = () => { isHidden.current = false; };
+    const onLeave = () => { isHidden.current = true; };
+    const onDown = () => { isClicking.current = true; };
+    const onUp = () => { isClicking.current = false; };
 
-    // Detect hoverable elements
     const CLICKABLE = 'a, button, input, select, textarea, [role="button"], label, [onclick], .btn, .sb-link, .tbl tr, .metric, .pill, .course-card';
 
     const onOver = (e) => {
-      if (e.target.closest(CLICKABLE)) setHovered(true);
+      if (e.target.closest(CLICKABLE)) isHovered.current = true;
     };
     const onOut = (e) => {
-      if (e.target.closest(CLICKABLE)) setHovered(false);
+      if (e.target.closest(CLICKABLE)) isHovered.current = false;
     };
 
-    window.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseenter', onEnter);
-    document.addEventListener('mouseleave', onLeave);
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('mouseup', onUp);
-    document.addEventListener('mouseover', onOver);
-    document.addEventListener('mouseout', onOut);
-
-    // Smooth animation loop
-    let raf;
-    const lerp = (a, b, n) => a + (b - a) * n;
-
-    const animate = () => {
-      pos.current.x = lerp(pos.current.x, target.current.x, 0.25);
-      pos.current.y = lerp(pos.current.y, target.current.y, 0.25);
-
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${target.current.x}px, ${target.current.y}px) translate(-50%, -50%)`;
-      }
-      if (ringRef.current) {
-        ringRef.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px) translate(-50%, -50%) scale(${hovered ? 1.8 : clicking ? 0.75 : 1})`;
-      }
-
-      raf = requestAnimationFrame(animate);
-    };
-    animate();
+    window.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('mouseenter', onEnter, { passive: true });
+    document.addEventListener('mouseleave', onLeave, { passive: true });
+    document.addEventListener('mousedown', onDown, { passive: true });
+    document.addEventListener('mouseup', onUp, { passive: true });
+    document.addEventListener('mouseover', onOver, { passive: true });
+    document.addEventListener('mouseout', onOut, { passive: true });
 
     // Hide default cursor globally
     document.body.style.cursor = 'none';
@@ -66,6 +50,44 @@ export default function CursorTrail() {
     style.id = 'cursor-hide';
     style.textContent = '*, *::before, *::after { cursor: none !important; }';
     document.head.appendChild(style);
+
+    let raf;
+    const lerp = (a, b, n) => a + (b - a) * n;
+
+    const animate = () => {
+      // Responsive but slightly heavy physics
+      // Dot is very fast but has a tiny bit of weight
+      dotPos.current.x = lerp(dotPos.current.x, target.current.x, 0.6);
+      dotPos.current.y = lerp(dotPos.current.y, target.current.y, 0.6);
+      
+      // Ring is heavier and trails behind smoothly
+      pos.current.x = lerp(pos.current.x, target.current.x, 0.15);
+      pos.current.y = lerp(pos.current.y, target.current.y, 0.15);
+
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${dotPos.current.x}px, ${dotPos.current.y}px) translate(-50%, -50%)`;
+        dotRef.current.style.opacity = isHidden.current ? '0' : '1';
+      }
+      
+      if (ringRef.current) {
+        const scale = isHovered.current ? 1.8 : (isClicking.current ? 0.75 : 1);
+        ringRef.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px) translate(-50%, -50%) scale(${scale})`;
+        ringRef.current.style.opacity = isHidden.current ? '0' : '0.7';
+        
+        // Direct style mutations for hover effects
+        if (isHovered.current) {
+          ringRef.current.style.background = 'rgba(45, 212, 191, 0.08)';
+          ringRef.current.style.borderColor = 'var(--accent-primary, #2dd4bf)';
+        } else {
+          ringRef.current.style.background = 'transparent';
+          ringRef.current.style.borderColor = 'rgba(255,255,255,0.35)';
+        }
+      }
+
+      raf = requestAnimationFrame(animate);
+    };
+    
+    animate();
 
     return () => {
       window.removeEventListener('mousemove', onMove);
@@ -79,14 +101,12 @@ export default function CursorTrail() {
       document.body.style.cursor = '';
       document.getElementById('cursor-hide')?.remove();
     };
-  }, [hovered, clicking]);
+  }, []);
 
-  // Don't render on touch
   if (typeof window !== 'undefined' && 'ontouchstart' in window) return null;
 
   return (
     <>
-      {/* Inner dot — snaps to cursor instantly */}
       <div
         ref={dotRef}
         style={{
@@ -99,12 +119,9 @@ export default function CursorTrail() {
           background: 'var(--accent-primary, #2dd4bf)',
           pointerEvents: 'none',
           zIndex: 999999,
-          opacity: hidden ? 0 : 1,
-          transition: 'opacity 0.2s, width 0.25s, height 0.25s, background 0.25s',
           willChange: 'transform',
         }}
       />
-      {/* Outer ring — follows with smooth lag */}
       <div
         ref={ringRef}
         style={{
@@ -114,13 +131,12 @@ export default function CursorTrail() {
           width: 28,
           height: 28,
           borderRadius: '50%',
-          border: `1.5px solid ${hovered ? 'var(--accent-primary, #2dd4bf)' : 'rgba(255,255,255,0.35)'}`,
-          background: hovered ? 'rgba(45, 212, 191, 0.08)' : 'transparent',
+          border: '1.5px solid rgba(255,255,255,0.35)',
+          background: 'transparent',
           pointerEvents: 'none',
           zIndex: 999998,
-          opacity: hidden ? 0 : 0.7,
-          transition: 'opacity 0.2s, border 0.3s, background 0.3s, width 0.3s ease, height 0.3s ease',
-          willChange: 'transform',
+          transition: 'width 0.3s ease, height 0.3s ease',
+          willChange: 'transform, opacity',
         }}
       />
     </>

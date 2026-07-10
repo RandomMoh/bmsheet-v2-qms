@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts'
 import ThemeToggle from '../ThemeToggle'
+import SlackThreadViewer from '../SlackThreadViewer'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -481,6 +482,7 @@ export default function AdminPortal() {
   const [timelineOrder, setTimelineOrder] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [slackThreadOrder, setSlackThreadOrder] = useState(null)
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -534,6 +536,7 @@ export default function AdminPortal() {
       if (e.key === 'Escape') {
         setDrillUser(null)
         setTimelineOrder(null)
+        setSlackThreadOrder(null)
       }
     }
     window.addEventListener('keydown', handler)
@@ -559,6 +562,8 @@ export default function AdminPortal() {
 
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
+  const [logFilterUser, setLogFilterUser] = useState('')
+  const [logFilterAction, setLogFilterAction] = useState('')
 
   const fetchLogs = useCallback((isPolling = false) => {
     if (user?.username !== 'Moh' && user?.username !== 'sajid csr admin login') return
@@ -592,6 +597,21 @@ export default function AdminPortal() {
 
   const totalPages = Math.ceil(filtered.length / PP)
   const visible = filtered.slice((page - 1) * PP, page * PP)
+
+  const stagnantOrders = useMemo(() => {
+    const now = new Date()
+    return orders.filter(o => {
+      if (String(o.status || '').toLowerCase() === 'completed' || o.query_done) return false
+      if (!o['query-received_datetime']) return false
+      const received = new Date(o['query-received_datetime'])
+      const diffHours = (now - received) / (1000 * 60 * 60)
+      if (diffHours >= 24) {
+        o._aging_hours = Math.floor(diffHours)
+        return true
+      }
+      return false
+    }).sort((a, b) => b._aging_hours - a._aging_hours)
+  }, [orders])
 
   const reportOrders = useMemo(() => {
     let d = orders.filter(o => o.query_done)
@@ -697,6 +717,27 @@ export default function AdminPortal() {
     doc.save(`QMS_Orders_${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
+  const exportAllPDF = async () => {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
+    const doc = new jsPDF('l', 'mm', 'a3')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(15, 23, 42)
+    doc.text('QMS Master Orders Export', 14, 20)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139)
+    doc.text(`Generated: ${new Date().toLocaleString()}  |  ${filtered.length} total queries`, 14, 28)
+    autoTable(doc, {
+      startY: 34, theme: 'grid',
+      head: [GRID_COLS.map(c => c.label)],
+      body: filtered.map(o => GRID_COLS.map(c => String(o[c.key] ?? '—'))),
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 7, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { cellPadding: 2.5, overflow: 'ellipsize' },
+    })
+    doc.setFontSize(7); doc.setTextColor(148, 163, 184)
+    doc.text('QMS © Benchmark Studio — Confidential', 14, doc.internal.pageSize.height - 8)
+    doc.save(`QMS_Orders_${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   const exportReportPDF = async () => {
     const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
     const doc = new jsPDF('l')
@@ -721,13 +762,39 @@ export default function AdminPortal() {
     doc.save(`QMS_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
+  const generateExecReport = async () => {
+    try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')])
+      const el = document.getElementById('exec-report-node')
+      if (!el) return
+      
+      const originalStyle = el.style.cssText
+      el.style.padding = '24px'
+      el.style.background = 'var(--bg-main)'
+      
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null })
+      const imgData = canvas.toDataURL('image/png')
+      
+      el.style.cssText = originalStyle
+      
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'l' : 'p',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      })
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      pdf.save(`Executive_Report_${getPKTDateStr()}.pdf`)
+    } catch (e) {
+      console.error('Report Generation Error:', e)
+      alert('Failed to generate report. Please check the console.')
+    }
+  }
+
   if (!user) return null
 
   const adminName = user.username || user.dname || user.name || 'Admin'
   const initials = adminName[0].toUpperCase()
-
-
-
 
 
   const handleAddUser = async e => {
@@ -787,7 +854,7 @@ export default function AdminPortal() {
     th: { fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', padding: '10px 14px', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '2px solid var(--border-strong)', background: 'var(--bg-panel)', textTransform: 'uppercase', letterSpacing: '0.04em' },
     td: { padding: '10px 14px', fontSize: 13, color: 'var(--text-main)', borderBottom: '1px solid var(--border-subtle)', whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' },
   }
-  const SECTIONS = { grid: 'All Orders', cmd: 'Command Center', reports: 'Performance Reports', addCsr: 'Add CSR', addAdmin: 'Add Admin', csrs: 'Manage Members', logs: 'Activity Monitor' }
+  const SECTIONS = { grid: 'All Orders', cmd: 'Analytics', reports: 'Performance Reports', csrs: 'Manage Members', logs: 'Activity Monitor' }
 
   return (
     <div className="shell fade-in">
@@ -795,6 +862,7 @@ export default function AdminPortal() {
 
       {drillUser && <DrillDown u={drillUser} onClose={() => setDrillUser(null)} />}
       {timelineOrder && <QueryTimeline order={timelineOrder} onClose={() => setTimelineOrder(null)} />}
+      {slackThreadOrder && <SlackThreadViewer slackTs={slackThreadOrder.slack_ts} orderId={slackThreadOrder['propery-order']} onClose={() => setSlackThreadOrder(null)} />}
       {mobileMenuOpen && <div className="overlay mobile-overlay" onClick={() => setMobileMenuOpen(false)} style={{ zIndex: 40 }} />}
 
       {/* ═══ SIDEBAR ═══ */}
@@ -810,7 +878,7 @@ export default function AdminPortal() {
         <nav className="sb-nav stagger">
           <div className="sb-group">
             <div className="sb-group-label">Overview</div>
-            {[{ id: 'grid', label: 'All Orders', icon: IC.grid }, { id: 'cmd', label: 'Command Center', icon: IC.chart }, { id: 'reports', label: 'Reports', icon: IC.layers }].map(n => (
+            {[{ id: 'grid', label: 'All Orders', icon: IC.grid }, { id: 'cmd', label: 'Analytics', icon: IC.chart }, { id: 'reports', label: 'Reports', icon: IC.layers }].map(n => (
               <button key={n.id} onClick={() => { setSection(n.id); setMobileMenuOpen(false) }} className={`sb-link${section === n.id ? ' active' : ''}`}>
                 <Icon paths={n.icon} size={14} style={{ color: section === n.id ? 'var(--accent-primary)' : 'var(--text-faint)' }} />
                 {n.label}
@@ -820,12 +888,6 @@ export default function AdminPortal() {
 
           <div className="sb-group">
             <div className="sb-group-label">Team Management</div>
-            {[{ id: 'addCsr', label: 'Add CSR', icon: IC.userPlus, action: () => { setMForm({ name: '', username: '', password: 'Bm123456' }); setMFb(null); setAddCsr(true); setMobileMenuOpen(false) } },
-            { id: 'addAdmin', label: 'Add Admin', icon: IC.shield, action: () => { setMForm({ name: '', username: '', password: 'Bm123456' }); setMFb(null); setAddAdmin(true); setMobileMenuOpen(false) } }].map(n => (
-              <button key={n.id} onClick={n.action} className="sb-link">
-                <Icon paths={n.icon} size={14} style={{ color: 'var(--text-faint)' }} />{n.label}
-              </button>
-            ))}
             <button onClick={() => { setSection('csrs'); fetchCsrs(); setMobileMenuOpen(false) }} className={`sb-link${section === 'csrs' ? ' active' : ''}`}>
               <Icon paths={IC.user} size={14} style={{ color: section === 'csrs' ? 'var(--accent-primary)' : 'var(--text-faint)' }} />Manage Members
             </button>
@@ -858,6 +920,11 @@ export default function AdminPortal() {
             <h1>{SECTIONS[section] || 'All Orders'}</h1>
           </div>
           <div className="topbar-actions">
+            <div className="live-sync-indicator" title="Connected and syncing in real-time">
+              <div className="live-sync-inner">
+                <div className="live-sync-dot"></div> Live Sync
+              </div>
+            </div>
             {section === 'grid' && <button onClick={exportOrdersPDF} className="btn btn-ghost btn-sm"><Icon paths={IC.download} size={12} />Export PDF</button>}
             {section === 'reports' && <button onClick={exportReportPDF} className="btn btn-ghost btn-sm"><Icon paths={IC.pdf} size={12} />Export PDF</button>}
           </div>
@@ -963,12 +1030,19 @@ export default function AdminPortal() {
                               if (c.key === 'completed_by') return <td key={c.key} className="cell-bold">{v || '—'}</td>
                               return <td key={c.key} title={String(v ?? '')}>{v || <span className="cell-muted">—</span>}</td>
                             })}
-                            <td style={{ textAlign: 'center' }}>
+                            <td style={{ textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
                               <button onClick={() => setTimelineOrder(o)} title="View Query Timeline"
                                 style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: 'var(--accent-primary)', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
                               >⏱ Log</button>
+                              {o.slack_ts && (
+                                <button onClick={() => setSlackThreadOrder(o)} title="View Slack Thread"
+                                  style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: '#10b981', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                >💬 Chat</button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -992,7 +1066,15 @@ export default function AdminPortal() {
           {/* ── COMMAND CENTER ── */}
           {section === 'cmd' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div className="metrics">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Command Center</h2>
+                <button onClick={generateExecReport} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
+                  <Icon paths={IC.pdf} size={16} /> Export Executive Report
+                </button>
+              </div>
+
+              <div id="exec-report-node" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div className="metrics stagger">
                 <div className="metric">
                   <div className="metric-title">Total Orders</div>
                   <div className="metric-val">{orders.length}</div>
@@ -1010,6 +1092,35 @@ export default function AdminPortal() {
                   <div className="metric-val" style={{ color: 'var(--accent-primary)' }}>{csrList.filter(c => c.status === 'yes').length}</div>
                 </div>
               </div>
+
+              {stagnantOrders.length > 0 && (
+                <div className="panel fade-up" style={{ borderColor: 'var(--status-danger)', borderWidth: 1 }}>
+                  <div className="panel-head" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Icon paths={IC.clock} size={18} style={{ color: 'var(--status-danger)' }} />
+                      <h3 style={{ color: 'var(--status-danger)', fontWeight: 600, fontSize: 15 }}>Stagnant Orders ({stagnantOrders.length})</h3>
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Unresolved &gt; 24h</span>
+                  </div>
+                  <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                    {stagnantOrders.map(o => (
+                      <div key={o.id} className="alert-card-danger">
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>{o['propery-order'] || `Order #${o.id}`}</span>
+                            <span className="alert-badge">{o._aging_hours}h</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span><strong>Status:</strong> {o.status || 'Pending'}</span>
+                            <span><strong>Assigned:</strong> {o.completed_by || 'Unassigned'}</span>
+                            <span><strong>Project:</strong> {o.project_name || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div className="panel fade-up">
@@ -1067,6 +1178,7 @@ export default function AdminPortal() {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           )}
 
@@ -1145,14 +1257,6 @@ export default function AdminPortal() {
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>Team Members</span>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({csrList.length})</span>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { setMForm({ name: '', username: '', password: 'Bm123456' }); setMFb(null); setAddCsr(true) }} className="btn btn-primary btn-sm">
-                    <Icon paths={IC.plus} size={12} />Add CSR
-                  </button>
-                  <button onClick={() => { setMForm({ name: '', username: '', password: 'Bm123456' }); setMFb(null); setAddAdmin(true) }} className="btn btn-primary btn-sm">
-                    <Icon paths={IC.shield} size={12} />Add Admin
-                  </button>
-                </div>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="tbl">
@@ -1178,13 +1282,15 @@ export default function AdminPortal() {
                             {c.status === 'yes' ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td style={{ display: 'flex', gap: 8 }}>
-                          {c.role === 'csr' && (
-                            <>
-                              <button onClick={() => { setEditCsr({ d_id: c.id }); setEForm({ name: c.name || '', username: c.username || '', password: '', status: c.status || 'yes' }); setEFb(null) }} className="btn btn-ghost btn-sm">Edit</button>
-                              <button onClick={() => setDelCsr({ d_id: c.id })} className="btn btn-danger-outline btn-sm">Remove</button>
-                            </>
-                          )}
+                        <td>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            {c.role === 'csr' && (
+                              <>
+                                <button onClick={() => { setEditCsr({ d_id: c.id }); setEForm({ name: c.name || '', username: c.username || '', password: '', status: c.status || 'yes' }); setEFb(null) }} className="btn btn-ghost btn-sm">Edit</button>
+                                <button onClick={() => setDelCsr({ d_id: c.id })} className="btn btn-danger-outline btn-sm">Remove</button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1197,25 +1303,35 @@ export default function AdminPortal() {
           {/* ── ACTIVITY MONITOR ── */}
           {section === 'logs' && user?.username === 'Moh' && (
             <div className="panel fade-up">
-              <div className="panel-head">
+              <div className="panel-head" style={{ flexWrap: 'wrap', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>System Activity Monitor</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({logs.length})</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({logs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).length})</span>
                   {logsLoading && <span className="dot dot-pulse" style={{ background: 'var(--accent-primary)', marginLeft: 8 }} />}
                 </div>
-                <button onClick={exportLogsPDF} className="btn btn-ghost btn-sm">
-                  <Icon paths={IC.download} size={12} />Export PDF
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, justifyContent: 'flex-end' }}>
+                  <select value={logFilterUser} onChange={e => setLogFilterUser(e.target.value)} className="inp" style={{ padding: '6px 10px', fontSize: 12 }}>
+                    <option value="">All Users</option>
+                    {Array.from(new Set(logs.map(l => l.username))).map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <select value={logFilterAction} onChange={e => setLogFilterAction(e.target.value)} className="inp" style={{ padding: '6px 10px', fontSize: 12 }}>
+                    <option value="">All Actions</option>
+                    {Array.from(new Set(logs.map(l => l.action))).map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  <button onClick={exportLogsPDF} className="btn btn-ghost btn-sm">
+                    <Icon paths={IC.download} size={12} />Export PDF
+                  </button>
+                </div>
               </div>
               <div style={{ overflowX: 'auto', maxHeight: 600 }}>
                 <table className="tbl">
                   <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
                     <tr>{['ID', 'Time (PKT)', 'User', 'Role', 'Action', 'Details'].map(h => <th key={h}>{h}</th>)}</tr>
                   </thead>
-                  <tbody>
-                    {logs.length === 0 ? (
-                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-faint)' }}>No activity logs found.</td></tr>
-                    ) : logs.map(l => (
+                  <tbody className="stagger">
+                    {logs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).length === 0 ? (
+                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-faint)' }}>No activity logs match filters.</td></tr>
+                    ) : logs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).map(l => (
                       <tr key={l.id}>
                         <td>{l.id}</td>
                         <td className="cell-muted">{l.timestamp_pkt}</td>

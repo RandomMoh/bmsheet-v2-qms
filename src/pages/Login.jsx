@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from '../ThemeToggle'
+import WebGLBackground from '../components/WebGLBackground'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
 
@@ -78,11 +79,10 @@ export default function Login() {
       <div className="login-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '56px 64px', background: 'linear-gradient(160deg, #031e1e 0%, #063f3f 20%, #0a5c5c 40%, #0b6b6f 60%, #094f52 80%, #042f2e 100%)', position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
 
         {/* Noise texture overlay */}
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundSize: '128px', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundSize: '128px', pointerEvents: 'none', zIndex: 1 }} />
 
-        <div className="login-orb-1" style={{ position: 'absolute', top: '5%', left: '8%', width: 480, height: 480, background: 'radial-gradient(circle, rgba(45,212,191,0.2) 0%, rgba(20,184,166,0.06) 40%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
-        <div className="login-orb-2" style={{ position: 'absolute', bottom: '5%', right: '5%', width: 520, height: 520, background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.04) 40%, transparent 70%)', filter: 'blur(100px)', pointerEvents: 'none' }} />
-        <div className="login-orb-3" style={{ position: 'absolute', top: '40%', left: '55%', width: 320, height: 320, background: 'radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 60%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        {/* Cinematic WebGL Sphere */}
+        <WebGLBackground />
 
         <div className="glass-block-1" style={{ position: 'absolute', top: '12%', left: '6%', width: 280, height: 180, background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
         <div className="glass-block-2" style={{ position: 'absolute', bottom: '15%', right: '8%', width: 220, height: 140, background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
@@ -193,6 +193,17 @@ export default function Login() {
           </form>
 
         </div>
+      </div>
+      
+      {/* Dev Login trigger */}
+      <div 
+        onClick={() => navigate('/dev')} 
+        style={{ position: 'fixed', bottom: 20, right: 32, cursor: 'pointer', zIndex: 99, fontSize: '11px', color: 'var(--text-faint)', letterSpacing: '0.1em', opacity: 0.4, transition: 'opacity 0.2s ease, color 0.2s ease' }} 
+        title="Developer Terminal"
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--text-main)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+      >
+        [ DEV_TERMINAL ]
       </div>
     </div>
   )

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Provision Access // QMS Terminal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-dark: #09090b; /* Zinc 950 */
+      --surface-dark: #18181b; /* Zinc 900 */
+      --accent: #10b981; /* Emerald 500 */
+    }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      color: #fafafa;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    /* Spring physics equivalents for CSS */
+    .spring-hover {
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .spring-fast {
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Cinematic noise overlay */
+    .noise {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    /* Staggered entrance animation */
+    .reveal-stagger {
+      opacity: 0;
+      transform: translateY(24px);
+      animation: revealStagger 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes revealStagger {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Input styling */
+    .premium-input {
+      background-color: #18181b; /* Zinc 900 */
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #fafafa;
+      transition: all 0.3s ease;
+    }
+    .premium-input:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+      background-color: #27272a; /* Zinc 800 */
+    }
+
+    /* Button tactile effect */
+    .btn-tactile:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    /* Inline typography image */
+    .inline-img {
+      display: inline-block;
+      width: 80px;
+      height: 48px;
+      border-radius: 9999px;
+      vertical-align: middle;
+      background-image: url('https://picsum.photos/seed/security/160/96');
+      background-size: cover;
+      background-position: center;
+      margin: 0 12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    @media (max-width: 640px) {
+      .inline-img {
+        width: 60px;
+        height: 36px;
+        margin: 0 8px;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-emerald-500/30">
+  <div class="noise"></div>
+
+  <main class="min-h-[100dvh] w-full grid grid-cols-1 lg:grid-cols-2">
+    
+    <!-- Left Column: Visual & Atmosphere -->
+    <section class="relative hidden lg:flex flex-col justify-between p-12 lg:p-20 border-r border-white/5 bg-[#0a0a0c]">
+      <div class="reveal-stagger" style="animation-delay: 0.1s;">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] uppercase tracking-[0.2em] text-zinc-400 font-medium">
+          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+          Secure Onboarding
+        </div>
+      </div>
+      
+      <div class="reveal-stagger" style="animation-delay: 0.2s;">
+        <h1 class="text-6xl xl:text-7xl font-light tracking-tight leading-[1.1] text-zinc-100">
+          Provision <br>
+          <span class="font-medium text-white">System</span>
+          <span class="inline-img"></span>
+          <span class="font-medium text-white">Access.</span>
+        </h1>
+        <p class="mt-8 text-lg text-zinc-500 max-w-md leading-relaxed font-light">
+          Generate authenticated credentials for new personnel. Authorization required.
+        </p>
+      </div>
+
+      <div class="reveal-stagger text-zinc-600 text-sm flex items-center gap-4" style="animation-delay: 0.3s;">
+        <i data-lucide="activity" class="w-4 h-4"></i>
+        Terminal Active • QMS Pro
+      </div>
+    </section>
+
+    <!-- Right Column: Form Interface -->
+    <section class="flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-24">
+      
+      <!-- Mobile Hero Fallback -->
+      <div class="lg:hidden mb-12 reveal-stagger">
+        <h1 class="text-4xl sm:text-5xl font-light tracking-tight text-white mb-4">
+          Provision Access
+        </h1>
+        <p class="text-zinc-500 text-base">Generate authenticated credentials for new personnel.</p>
+      </div>
+
+      <div class="w-full max-w-md mx-auto lg:mx-0 reveal-stagger" style="animation-delay: 0.4s;">
+        
+        <form id="csrForm" class="space-y-8">
+          
+          <!-- Key Input -->
+          <div class="space-y-3">
+            <label for="seniorKey" class="block text-xs uppercase tracking-[0.15em] font-medium text-zinc-400">
+              Senior Authorization Key
+            </label>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-zinc-300 transition-colors">
+                <i data-lucide="key" class="w-5 h-5"></i>
+              </div>
+              <input type="password" id="seniorKey" required 
+                class="premium-input w-full rounded-xl pl-12 pr-4 py-4 text-sm placeholder:text-zinc-600" 
+                placeholder="Enter passphrase key">
+            </div>
+          </div>
+
+          <!-- Name Input -->
+          <div class="space-y-3">
+            <label for="csrName" class="block text-xs uppercase tracking-[0.15em] font-medium text-zinc-400">
+              Personnel Name
+            </label>
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-zinc-300 transition-colors">
+                <i data-lucide="user-plus" class="w-5 h-5"></i>
+              </div>
+              <input type="text" id="csrName" required 
+                class="premium-input w-full rounded-xl pl-12 pr-4 py-4 text-sm placeholder:text-zinc-600" 
+                placeholder="e.g. [Name] CSR">
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="pt-4">
+            <button type="submit" id="submitBtn" 
+              class="group relative w-full flex items-center justify-center gap-3 rounded-xl bg-white text-zinc-950 px-6 py-4 font-medium text-sm transition-all duration-300 hover:bg-zinc-200 btn-tactile overflow-hidden">
+              <span id="btnText" class="relative z-10">Generate Credentials</span>
+              <i data-lucide="arrow-right" class="w-4 h-4 relative z-10 spring-fast group-hover:translate-x-1"></i>
+            </button>
+          </div>
+
+          <!-- Error Message -->
+          <div id="errorMsg" class="hidden flex items-center gap-2 text-red-400 text-sm mt-2 p-3 bg-red-400/10 rounded-lg border border-red-400/20">
+            <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
+            <span id="errorText"></span>
+          </div>
+
+        </form>
+
+        <!-- Success Result State -->
+        <div id="resultBox" class="hidden mt-10 p-6 rounded-2xl bg-zinc-900 border border-emerald-500/20 shadow-2xl relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+          
+          <div class="flex items-center gap-2 text-emerald-400 text-xs uppercase tracking-[0.15em] font-medium mb-6">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            Credentials Provisioned
+          </div>
+          
+          <div class="space-y-6">
+            <div>
+              <label class="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">System Username</label>
+              <div id="resUser" class="font-mono text-lg text-zinc-100 select-all bg-zinc-950 px-4 py-2 rounded-lg border border-white/5"></div>
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">Password</label>
+              <div id="resPass" class="font-mono text-lg text-emerald-400 select-all bg-zinc-950 px-4 py-2 rounded-lg border border-emerald-500/10"></div>
+            </div>
+            
+            <p class="text-xs text-zinc-500 pt-2 border-t border-white/5">
+              Copy and securely transmit these credentials to the new personnel.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    document.getElementById('csrForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const key = document.getElementById('seniorKey').value;
+      const name = document.getElementById('csrName').value;
+      const btn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const errorMsg = document.getElementById('errorMsg');
+      const errorText = document.getElementById('errorText');
+      const resultBox = document.getElementById('resultBox');
+      
+      // Reset state
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      btnText.textContent = 'Authenticating...';
+      errorMsg.classList.add('hidden');
+      resultBox.classList.add('hidden');
+      resultBox.classList.remove('reveal-stagger');
+      
+      try {
+        const res = await fetch('api/create-csr.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, password: key })
+        });
+        
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          document.getElementById('resUser').textContent = data.username;
+          document.getElementById('resPass').textContent = data.password;
+          
+          // Trigger reflow for animation
+          void resultBox.offsetWidth;
+          
+          resultBox.classList.remove('hidden');
+          resultBox.classList.add('reveal-stagger');
+          
+          document.getElementById('csrName').value = '';
+          document.getElementById('seniorKey').value = '';
+        } else {
+          errorText.textContent = data.message || 'Authorization failed. Check key.';
+          errorMsg.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorText.textContent = 'Network communication failure. Server unreachable.';
+        errorMsg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+        btnText.textContent = 'Generate Credentials';
+      }
+    });
+  </script>
+</body>
+</html>

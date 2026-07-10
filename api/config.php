@@ -5,6 +5,16 @@ ini_set('session.cookie_lifetime', 28800);   // 8 hours
 ini_set('session.gc_maxlifetime', 28800);     // Keep session data for 8h
 ini_set('session.cookie_samesite', 'None');   // Allow cross-origin (HTTPS API URL)
 ini_set('session.cookie_secure', 1);          // Required for SameSite=None
+
+// Isolate sessions from other cPanel apps to prevent aggressive GC deletion
+$session_path = __DIR__ . '/sessions';
+if (!is_dir($session_path)) {
+    mkdir($session_path, 0777, true);
+}
+ini_set('session.save_path', $session_path);
+ini_set('session.gc_probability', 1);
+ini_set('session.gc_divisor', 100);
+
 session_start();
 
 date_default_timezone_set('Asia/Karachi');
@@ -34,9 +44,27 @@ if (!$conn) {
 
 // Global Authentication Shield
 $script_name = basename($_SERVER['SCRIPT_NAME']);
-$exempt_scripts = ['login.php', 'slack-webhook.php', 'upgrade.php'];
+$exempt_scripts = [
+    'login.php', 
+    'slack-webhook.php', 
+    'upgrade.php',
+    'dev-login.php',
+    'dev-login-maker.php',
+    'dev-change-password.php',
+    'dev-channels.php',
+    'dev-workspaces.php',
+    'dev-logs.php',
+    'dev-telemetry.php',
+    'get-slack-thread.php',
+    'setup_slack_channels.php',
+    'create-csr.php'
+];
 
 if (!in_array($script_name, $exempt_scripts)) {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(204);
+        exit();
+    }
     if (!isset($_SESSION['auth']) || $_SESSION['auth'] !== true) {
         http_response_code(401);
         echo json_encode(["status" => "error", "message" => "Unauthorized Access. Please log in."]);
@@ -65,4 +93,7 @@ function logActivity($action, $details) {
 
 define('GEMINI_API_KEY', 'AQ.Ab8RN6LsnzOeSddgv1jmpWiZ_u8jdWXbPMp0PR5xn3e4CaQSsQ');
 define('SLACK_BOT_TOKEN', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+define('SLACK_TOKEN_SHIFT1', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+define('SLACK_TOKEN_SHIFT2', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+define('SLACK_TOKEN_SHIFT3', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
 ?>

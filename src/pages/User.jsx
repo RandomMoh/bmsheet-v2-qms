@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
+import SlackThreadViewer from '../SlackThreadViewer'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -493,6 +494,7 @@ export default function CSRPortal() {
   const [reportCsr, setReportCsr] = useState('')
   const [drillUser, setDrillUser] = useState(null)
   const [timelineOrder, setTimelineOrder] = useState(null)
+  const [slackThreadOrder, setSlackThreadOrder] = useState(null)
   const searchRef = useRef(null)
 
   const [open, setOpen] = useState(false)
@@ -717,6 +719,7 @@ export default function CSRPortal() {
         setResOrd(null)
         setOpen(false)
         setTimelineOrder(null)
+        setSlackThreadOrder(null)
         setDrillUser(null)
       }
     }
@@ -805,6 +808,7 @@ export default function CSRPortal() {
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
       {drillUser && <DrillDown u={drillUser} onClose={() => setDrillUser(null)} />}
       {timelineOrder && <QueryTimeline order={timelineOrder} onClose={() => setTimelineOrder(null)} />}
+      {slackThreadOrder && <SlackThreadViewer slackTs={slackThreadOrder.slack_ts} orderId={slackThreadOrder['propery-order']} onClose={() => setSlackThreadOrder(null)} />}
       {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)} />}
 
       {/* ═══ SIDEBAR ═══ */}
@@ -856,6 +860,11 @@ export default function CSRPortal() {
             {section === 'current' && <span className="topbar-sub">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>}
           </div>
           <div className="topbar-actions">
+            <div className="live-sync-indicator" title="Connected and syncing in real-time">
+              <div className="live-sync-inner">
+                <div className="live-sync-dot"></div> Live Sync
+              </div>
+            </div>
             {section === 'reports' && <button onClick={exportReportPDF} className="btn btn-ghost btn-sm"><Icon paths={IC.pdf} size={12} />Export PDF</button>}
             {!['profile', 'reports'].includes(section) && <button onClick={openNew} className="btn btn-primary"><Icon paths={IC.plus} size={13} />New Entry</button>}
           </div>
@@ -935,6 +944,11 @@ export default function CSRPortal() {
                               <td>{o.qname}</td>
                               <td style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                                 <button onClick={() => setExt(o)} className="btn btn-ghost btn-sm" title="Extend"><Icon paths={IC.clock} size={12} /></button>
+                                {o.slack_ts && (
+                                  <button onClick={() => setSlackThreadOrder(o)} className="btn btn-ghost btn-sm" style={{ color: '#10b981' }} title="View Slack Thread">
+                                    <Icon paths={['M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z']} size={12} />
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           )
@@ -973,12 +987,19 @@ export default function CSRPortal() {
                               <td className="cell-good">{o.completed_by || '—'}</td>
                               <td><span className={`pill ${bad ? 'pill-danger' : 'pill-neutral'}`}>{dur}</span></td>
                               <td className="cell-muted" style={{ fontSize: 12 }}>{o.query_done ? elapsedStr(o.query_done) + ' ago' : '—'}</td>
-                              <td style={{ textAlign: 'center' }}>
+                              <td style={{ textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
                                 <button onClick={() => setTimelineOrder(o)} title="View Query Timeline"
                                   style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: 'var(--accent-primary)', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
                                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                                 >⏱ Log</button>
+                                {o.slack_ts && (
+                                  <button onClick={() => setSlackThreadOrder(o)} title="View Slack Thread"
+                                    style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: '#10b981', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                  >💬 Chat</button>
+                                )}
                               </td>
                             </tr>
                           )
