@@ -53,16 +53,28 @@ export default function CursorTrail() {
 
     let raf;
     const lerp = (a, b, n) => a + (b - a) * n;
+    
+    let lastTime = performance.now();
 
-    const animate = () => {
+    const animate = (time) => {
+      const dt = Math.max(1, Math.min(time - lastTime, 50));
+      lastTime = time;
+      
+      // Framerate independent lerp: normalizes the dt to 60fps (16.66ms)
+      const timeRatio = dt / 16.666;
+      
+      // Math.pow(1 - rate, timeRatio) ensures the curve is identical on 60hz vs 144hz
+      const dotFactor = 1 - Math.pow(1 - 0.6, timeRatio);
+      const ringFactor = 1 - Math.pow(1 - 0.15, timeRatio);
+
       // Responsive but slightly heavy physics
       // Dot is very fast but has a tiny bit of weight
-      dotPos.current.x = lerp(dotPos.current.x, target.current.x, 0.6);
-      dotPos.current.y = lerp(dotPos.current.y, target.current.y, 0.6);
+      dotPos.current.x = lerp(dotPos.current.x, target.current.x, dotFactor);
+      dotPos.current.y = lerp(dotPos.current.y, target.current.y, dotFactor);
       
       // Ring is heavier and trails behind smoothly
-      pos.current.x = lerp(pos.current.x, target.current.x, 0.15);
-      pos.current.y = lerp(pos.current.y, target.current.y, 0.15);
+      pos.current.x = lerp(pos.current.x, target.current.x, ringFactor);
+      pos.current.y = lerp(pos.current.y, target.current.y, ringFactor);
 
       if (dotRef.current) {
         dotRef.current.style.transform = `translate(${dotPos.current.x}px, ${dotPos.current.y}px) translate(-50%, -50%)`;
