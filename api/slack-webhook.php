@@ -17,6 +17,18 @@ function debugLog($message) {
     file_put_contents($logFile, "[$time] $message\n", FILE_APPEND);
 }
 
+// ─── Check Pause Status ──────────────────────────────────────
+$statusFile = __DIR__ . '/webhook-status.json';
+if (file_exists($statusFile)) {
+    $statusData = json_decode(file_get_contents($statusFile), true);
+    if (isset($statusData['paused']) && $statusData['paused'] === true) {
+        debugLog("Webhook is PAUSED. Ignoring incoming payload.");
+        http_response_code(200);
+        echo json_encode(['status' => 'paused']);
+        exit;
+    }
+}
+
 // ─── ACK Slack immediately — prevents retry storms ───────────
 function ackSlack() {
     http_response_code(200);

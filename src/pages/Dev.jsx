@@ -23,6 +23,7 @@ export default function Dev() {
   const [logs, setLogs] = useState([])
   const [logsLastMod, setLogsLastMod] = useState(null)
   const [logsPaused, setLogsPaused] = useState(false)
+  const [webhookPaused, setWebhookPaused] = useState(false)
   const logsContainerRef = useState(null)
   
   // Password change state
@@ -44,6 +45,7 @@ export default function Dev() {
     if (isAuthenticated) {
       fetchTelemetry()
       fetchLogs()
+      fetchWebhookStatus()
       telInterval = setInterval(fetchTelemetry, 10000)
       logInterval = setInterval(() => { if (!logsPaused) fetchLogs() }, 3000)
     }
@@ -56,6 +58,30 @@ export default function Dev() {
       if (res.ok) {
         const data = await res.json()
         setTelemetry(data)
+      }
+    } catch (err) { console.error(err) }
+  }
+
+  const fetchWebhookStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/dev-webhook-status.php`)
+      if (res.ok) {
+        const data = await res.json()
+        setWebhookPaused(data.paused)
+      }
+    } catch (err) { console.error(err) }
+  }
+
+  const toggleWebhook = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/dev-webhook-status.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paused: !webhookPaused })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setWebhookPaused(data.paused)
       }
     } catch (err) { console.error(err) }
   }
@@ -317,6 +343,9 @@ export default function Dev() {
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button onClick={toggleWebhook} className="brutalist-btn brutalist-btn-ghost" style={{ height: 'fit-content', borderColor: webhookPaused ? '#E61919' : '#333', color: webhookPaused ? '#E61919' : '' }}>
+              {webhookPaused ? 'RESUME_WEBHOOK' : 'PAUSE_WEBHOOK'}
+            </button>
             <button onClick={() => setShowPwdModal(true)} className="brutalist-btn brutalist-btn-ghost" style={{ height: 'fit-content', borderColor: '#333' }}>
               CHG_PASSPHRASE
             </button>
