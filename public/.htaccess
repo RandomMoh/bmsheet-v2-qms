@@ -10,17 +10,17 @@
   RewriteCond %{REQUEST_URI} ^/qms_react/api/ [NC]
   RewriteRule ^ - [L]
 
-  # Allow the Dev Terminal React route and its static assets
-  # The React SPA handles routing, so we just let index.html through
-  # when the URL starts with #/dev or is a static asset
+  # Allow static assets
   RewriteCond %{REQUEST_URI} ^/qms_react/assets/ [NC]
   RewriteRule ^ - [L]
 
-  # Allow index.html itself (needed for React SPA)
+  # Allow index.html directly
   RewriteRule ^index\.html$ - [L]
 
-  # Serve index.html for /dev route so React Router can handle it
-  RewriteCond %{QUERY_STRING} ^$ [NC]
+  # Allow root request (serves index.html, React Router handles the rest)
+  RewriteRule ^$ /qms_react/index.html [L]
+
+  # Allow /dev route
   RewriteRule ^dev$ /qms_react/index.html [L]
 
   # Redirect everything else to shutdown page
