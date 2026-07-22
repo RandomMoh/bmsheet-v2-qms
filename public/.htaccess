@@ -14,12 +14,6 @@
   RewriteCond %{REQUEST_URI} ^/qms_react/assets/ [NC]
   RewriteRule ^ - [L]
 
-  # Allow index.html directly (needed for /dev route to resolve)
-  RewriteRule ^index\.html$ - [L]
-
-  # Allow /dev route for Dev Terminal
-  RewriteRule ^dev$ /qms_react/index.html [L]
-
   # Redirect everything else to shutdown page
   RewriteRule ^(.*)$ /qms_react/shutdown.html [R=302,L]
 </IfModule>
