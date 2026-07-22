@@ -36,14 +36,16 @@ export default function Dev() {
     setPortalLaunching(true)
     setPortalCredErr(null)
     try {
-      const res = await fetch(`${API_BASE}/dev-portal-access.php`)
-      if (res.ok) {
-        const data = await res.json()
-        setPortalCreds(data)
-        setShowPortalModal(true)
-      } else {
-        setPortalCredErr('ACCESS_DENIED')
-      }
+      // Fetch credentials
+      const res = await fetch(`${API_BASE}/dev-portal-access.php`, { credentials: 'include' })
+      if (!res.ok) { setPortalCredErr('ACCESS_DENIED'); setPortalLaunching(false); return }
+      const data = await res.json()
+
+      // Set the bypass cookie so Apache allows portal through the shutdown .htaccess
+      await fetch(`${API_BASE}/dev-portal-bypass.php`, { method: 'POST', credentials: 'include' })
+
+      setPortalCreds(data)
+      setShowPortalModal(true)
     } catch (err) {
       setPortalCredErr('CONNECTION_FAILED')
     }

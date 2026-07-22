@@ -1,4 +1,4 @@
-# Temporarily Shut Down QMS Portal — Dev Terminal Remains Accessible
+# QMS Portal — Shutdown Mode (Dev Terminal accessible, Portal cookie-bypass only)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /qms_react/
@@ -10,24 +10,17 @@
   RewriteCond %{REQUEST_URI} ^/qms_react/api/ [NC]
   RewriteRule ^ - [L]
 
-  # Allow static assets
+  # Allow static assets (JS/CSS chunks)
   RewriteCond %{REQUEST_URI} ^/qms_react/assets/ [NC]
   RewriteRule ^ - [L]
 
-  # Allow index.html directly
-  RewriteRule ^index\.html$ - [L]
-
-  # Allow root request (serves index.html, React Router handles the rest)
-  RewriteRule ^$ /qms_react/index.html [L]
-
-  # Allow /dev route
+  # Allow /dev route for Dev Terminal
   RewriteRule ^dev$ /qms_react/index.html [L]
 
+  # Allow portal through if the dev bypass cookie is present (set by dev-portal-bypass.php)
+  RewriteCond %{HTTP_COOKIE} qms_dev_bypass=1
+  RewriteRule ^ - [L]
+
   # Redirect everything else to shutdown page
-  RewriteCond %{REQUEST_URI} !^/qms_react/shutdown\.html$
-  RewriteCond %{REQUEST_URI} !^/qms_react/api/ [NC]
-  RewriteCond %{REQUEST_URI} !^/qms_react/assets/ [NC]
-  RewriteCond %{REQUEST_URI} !^/qms_react/index\.html$
-  RewriteCond %{REQUEST_URI} !^/qms_react/dev$
   RewriteRule ^(.*)$ /qms_react/shutdown.html [R=302,L]
 </IfModule>

@@ -57,6 +57,7 @@ $exempt_scripts = [
     'dev-telemetry.php',
     'dev-webhook-status.php',
     'dev-portal-access.php',
+    'dev-portal-bypass.php',
     'get-slack-thread.php',
     'setup_slack_channels.php',
     'create-csr.php'
