@@ -26,32 +26,6 @@ export default function Dev() {
   const [webhookPaused, setWebhookPaused] = useState(false)
   const logsContainerRef = useState(null)
   
-  // Portal access launcher
-  const [portalLaunching, setPortalLaunching] = useState(false)
-  const [showPortalModal, setShowPortalModal] = useState(false)
-  const [portalCreds, setPortalCreds] = useState(null)
-  const [portalCredErr, setPortalCredErr] = useState(null)
-
-  const launchPortal = async () => {
-    setPortalLaunching(true)
-    setPortalCredErr(null)
-    try {
-      // Fetch credentials
-      const res = await fetch(`${API_BASE}/dev-portal-access.php`, { credentials: 'include' })
-      if (!res.ok) { setPortalCredErr('ACCESS_DENIED'); setPortalLaunching(false); return }
-      const data = await res.json()
-
-      // Set the bypass cookie so Apache allows portal through the shutdown .htaccess
-      await fetch(`${API_BASE}/dev-portal-bypass.php`, { method: 'POST', credentials: 'include' })
-
-      setPortalCreds(data)
-      setShowPortalModal(true)
-    } catch (err) {
-      setPortalCredErr('CONNECTION_FAILED')
-    }
-    setPortalLaunching(false)
-  }
-
   // Password change state
   const [showPwdModal, setShowPwdModal] = useState(false)
   const [newPwd, setNewPwd] = useState('')
@@ -369,9 +343,6 @@ export default function Dev() {
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button onClick={launchPortal} disabled={portalLaunching} className="brutalist-btn brutalist-btn-ghost" style={{ height: 'fit-content', borderColor: '#2DD4BF', color: '#2DD4BF' }}>
-              {portalLaunching ? 'LOADING...' : '>>> LAUNCH_QMS_PORTAL'}
-            </button>
             <button onClick={toggleWebhook} className="brutalist-btn brutalist-btn-ghost" style={{ height: 'fit-content', borderColor: webhookPaused ? '#E61919' : '#333', color: webhookPaused ? '#E61919' : '' }}>
               {webhookPaused ? 'RESUME_WEBHOOK' : 'PAUSE_WEBHOOK'}
             </button>
@@ -619,48 +590,6 @@ export default function Dev() {
           </div>
         </div>
       </div>
-
-      {/* PORTAL LAUNCH MODAL */}
-      {showPortalModal && portalCreds && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(5,5,5,0.92)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="brutalist-box" style={{ padding: '32px', width: '440px', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '3px', background: 'linear-gradient(90deg, #2DD4BF, transparent)' }}></div>
-            <h3 className="dev-header-font" style={{ margin: '0 0 8px 0', fontSize: '20px', borderBottom: '1px solid #333', paddingBottom: '16px', marginBottom: '24px' }}>[ QMS_PORTAL_ACCESS ]</h3>
-            <p style={{ fontSize: '11px', color: '#71717A', letterSpacing: '0.05em', marginBottom: '24px' }}>/// CREDENTIALS FOR PORTAL LOGIN — DO NOT SHARE</p>
-
-            <div style={{ display: 'grid', gap: '1px', backgroundColor: '#333', border: '1px solid #333', marginBottom: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', backgroundColor: '#333' }}>
-                <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A' }}>
-                  <div style={{ fontSize: '9px', color: '#71717A', letterSpacing: '0.15em', marginBottom: '8px', textTransform: 'uppercase' }}>CSR Login</div>
-                  <div className="dev-header-font" style={{ fontSize: '18px', color: '#EAEAEA', letterSpacing: '0.05em' }}>{portalCreds.csr_password}</div>
-                </div>
-                <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A' }}>
-                  <div style={{ fontSize: '9px', color: '#71717A', letterSpacing: '0.15em', marginBottom: '8px', textTransform: 'uppercase' }}>Admin Panel</div>
-                  <div className="dev-header-font" style={{ fontSize: '18px', color: '#EAEAEA', letterSpacing: '0.05em' }}>{portalCreds.admin_password}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <a href="/qms_react/" target="_blank" rel="noopener noreferrer"
-                className="brutalist-btn brutalist-btn-primary"
-                style={{ flex: 1, textDecoration: 'none', textAlign: 'center', backgroundColor: '#2DD4BF', color: '#000', borderColor: '#2DD4BF' }}
-              >
-                OPEN PORTAL &gt;&gt;&gt;
-              </a>
-              <button
-                onClick={() => { setShowPortalModal(false); setPortalCreds(null); }}
-                className="brutalist-btn brutalist-btn-ghost"
-              >CLOSE</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {portalCredErr && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', backgroundColor: '#0A0A0A', border: '1px solid #E61919', padding: '12px 20px', fontSize: '12px', color: '#E61919', zIndex: 9999 }}>
-          [ERR] {portalCredErr} <button onClick={() => setPortalCredErr(null)} style={{ marginLeft: '12px', background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: '12px' }}>✕</button>
-        </div>
-      )}
 
       {/* PASSWORD CHANGE MODAL */}
       {showPwdModal && (
