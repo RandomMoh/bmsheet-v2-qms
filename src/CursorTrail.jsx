@@ -4,12 +4,10 @@ export default function CursorTrail() {
   const dotRef = useRef(null);
   const ringRef = useRef(null);
   
-  // Physics state
   const target = useRef({ x: -100, y: -100 });
   const pos = useRef({ x: -100, y: -100 }); // Ring position
   const dotPos = useRef({ x: -100, y: -100 }); // Dot position
   
-  // Interaction state
   const isHovered = useRef(false);
   const isClicking = useRef(false);
   const isHidden = useRef(false);
@@ -44,7 +42,6 @@ export default function CursorTrail() {
     document.addEventListener('mouseover', onOver, { passive: true });
     document.addEventListener('mouseout', onOut, { passive: true });
 
-    // Hide default cursor globally
     document.body.style.cursor = 'none';
     const style = document.createElement('style');
     style.id = 'cursor-hide';
@@ -55,12 +52,9 @@ export default function CursorTrail() {
     const lerp = (a, b, n) => a + (b - a) * n;
 
     const animate = () => {
-      // Responsive but slightly heavy physics
-      // Dot is very fast but has a tiny bit of weight
       dotPos.current.x = lerp(dotPos.current.x, target.current.x, 0.6);
       dotPos.current.y = lerp(dotPos.current.y, target.current.y, 0.6);
       
-      // Ring is heavier and trails behind smoothly
       pos.current.x = lerp(pos.current.x, target.current.x, 0.15);
       pos.current.y = lerp(pos.current.y, target.current.y, 0.15);
 
@@ -74,7 +68,6 @@ export default function CursorTrail() {
         ringRef.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px) translate(-50%, -50%) scale(${scale})`;
         ringRef.current.style.opacity = isHidden.current ? '0' : '0.7';
         
-        // Direct style mutations for hover effects
         if (isHovered.current) {
           ringRef.current.style.background = 'rgba(45, 212, 191, 0.08)';
           ringRef.current.style.borderColor = 'var(--accent-primary, #2dd4bf)';

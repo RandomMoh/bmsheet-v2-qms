@@ -1,6 +1,4 @@
 <?php
-// Activity Logger — call logActivity() from any API script after including config.php
-// Records admin/user actions for audit trail
 
 function logActivity($conn, $action, $details = '') {
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
@@ -15,7 +13,6 @@ function logActivity($conn, $action, $details = '') {
     $stmt->close();
 }
 
-// Track active session — call on every authenticated request
 function trackSession($conn) {
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
     $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'unknown';
@@ -29,7 +26,6 @@ function trackSession($conn) {
     $stmt->execute();
     $stmt->close();
 
-    // Clean stale sessions (inactive > 30 minutes)
     $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
 }
 ?>

@@ -21,7 +21,6 @@ if ($from && $to) {
 } elseif ($to) {
     $where .= " AND `date` <= '$to'";
 } else {
-    // Default: last 30 days only (change INTERVAL value to adjust)
     $where .= " AND `query_done` >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
 }
 

@@ -115,7 +115,6 @@ body::before {
 
 .wrap { position: relative; z-index: 1; width: 92%; max-width: 480px; }
 
-/* Brand */
 .brand {
   display: flex;
   align-items: center;
@@ -132,7 +131,6 @@ body::before {
 .brand-sep { width: 1px; height: 18px; background: #99f6e4; }
 .brand-tag { font-size: 12px; font-weight: 500; color: #5eead4; letter-spacing: .5px; text-transform: uppercase; }
 
-/* Card */
 .card {
   background: #fff;
   border-radius: 28px;
@@ -144,7 +142,6 @@ body::before {
     0 0 0 1px rgba(20,184,166,.06);
 }
 
-/* Icon */
 .icon-wrap {
   width: 76px; height: 76px;
   margin: 0 auto 28px;
@@ -164,7 +161,6 @@ body::before {
 @keyframes pulse-ring { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.06);opacity:1} }
 .icon-wrap svg { width: 32px; height: 32px; color: #0d9488; }
 
-/* Success icon */
 .icon-wrap.ok {
   background: linear-gradient(145deg, #f0fdf4, #dcfce7);
   border-color: rgba(34,197,94,.2);
@@ -173,11 +169,9 @@ body::before {
 .icon-wrap.ok svg { color: #16a34a; animation: popIn .5s cubic-bezier(.175,.885,.32,1.275); }
 @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
 
-/* Typography */
 h1 { font-size: 24px; font-weight: 800; color: #134e4a; letter-spacing: -.4px; margin-bottom: 10px; text-align: center; }
 .sub { font-size: 14.5px; color: #5f7271; line-height: 1.75; margin-bottom: 28px; text-align: center; }
 
-/* Error */
 .error-msg {
   background: #fff1f2;
   border: 1.5px solid #fecdd3;
@@ -193,7 +187,6 @@ h1 { font-size: 24px; font-weight: 800; color: #134e4a; letter-spacing: -.4px; m
 }
 .error-msg svg { flex-shrink: 0; color: #e11d48; }
 
-/* Form */
 .form-group { margin-bottom: 18px; }
 label {
   display: block;
@@ -244,7 +237,6 @@ button:hover {
 }
 button:active { transform: translateY(0); }
 
-/* Credential blocks */
 .cred-block {
   border-radius: 14px;
   padding: 18px 20px;
@@ -277,7 +269,6 @@ button:active { transform: translateY(0); }
 .cred-block.user .cred-value { color: #0f766e; }
 .cred-block.pass .cred-value { color: #92400e; }
 
-/* Warning note */
 .warning-note {
   background: #fffbeb;
   border: 1.5px solid rgba(234,179,8,.2);
@@ -293,7 +284,6 @@ button:active { transform: translateY(0); }
 }
 .warning-note svg { flex-shrink: 0; margin-top: 2px; color: #d97706; }
 
-/* Status pill */
 .status {
   display: inline-flex;
   align-items: center;

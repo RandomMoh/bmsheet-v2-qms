@@ -24,7 +24,6 @@ $value = mysqli_real_escape_string($conn, trim($data->value));
 $changedBy = isset($data->changed_by) ? mysqli_real_escape_string($conn, trim($data->changed_by)) : 'Admin';
 $now   = date('Y-m-d H:i:s');
 
-// Fetch old value before update
 $oldRes = mysqli_query($conn, "SELECT `$field` FROM `order` WHERE `id` = $id");
 $oldRow = $oldRes ? mysqli_fetch_assoc($oldRes) : null;
 $oldValue = $oldRow ? $oldRow[$field] : null;
@@ -33,7 +32,6 @@ $sql = "UPDATE `order` SET `$field` = '$value' WHERE `id` = $id";
 if (mysqli_query($conn, $sql)) {
     logActivity('Update Field', "Updated $field to '$value' for order #$id");
 
-    // Log to query_history only if value actually changed
     if ($oldValue !== $value) {
         $oldEsc = mysqli_real_escape_string($conn, $oldValue ?? '');
         mysqli_query($conn, "INSERT INTO `query_history` (`order_id`, `changed_by`, `action`, `field_changed`, `old_value`, `new_value`, `timestamp_pkt`)

@@ -26,13 +26,11 @@ export default function Dev() {
   const [webhookPaused, setWebhookPaused] = useState(false)
   const logsContainerRef = useState(null)
   
-  // Password change state
   const [showPwdModal, setShowPwdModal] = useState(false)
   const [newPwd, setNewPwd] = useState('')
   const [pwdLoading, setPwdLoading] = useState(false)
   const [pwdMsg, setPwdMsg] = useState('')
   
-  // Login maker config state
   const [showMakerModal, setShowMakerModal] = useState(false)
   const [makerPwd, setMakerPwd] = useState('')
   const [makerLoading, setMakerLoading] = useState(false)
@@ -93,7 +91,6 @@ export default function Dev() {
         const data = await res.json()
         setLogs(data.logs || [])
         setLogsLastMod(data.last_modified || null)
-        // Auto-scroll only if user is within 80px of the bottom
         const el = logsContainerRef[0]
         if (el && !logsPaused) {
           const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
@@ -325,7 +322,6 @@ export default function Dev() {
             QMS_TELEMETRY<span style={{color: '#E61919'}}>.SYS</span>
           </h2>
           <p style={{ margin: 0, color: '#71717A', fontSize: '14px', letterSpacing: '0.1em' }}>
-            /// DIRECTIVES FOR SLACK CHANNEL INTEGRATION (REV 2.6) <span className="terminal-blink">_</span>
           </p>
         </div>
         <div className="dev-actions-group">
@@ -568,7 +564,6 @@ export default function Dev() {
               </div>
             ) : (
               logs.map((line, i) => {
-                // Color-code based on content
                 let color = '#71717A'
                 let prefix = '>'
                 if (line.includes('Webhook triggered')) { color = '#4CAF50'; prefix = '▶' }

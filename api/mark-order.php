@@ -20,7 +20,6 @@ $instruction = isset($body['instruction']) ? mysqli_real_escape_string($conn, $b
 $user   = isset($body['completed_by']) ? mysqli_real_escape_string($conn, $body['completed_by']) : '';
 $now    = date('Y-m-d H:i:s');
 
-// Fetch current state BEFORE update for diff tracking
 $checkSql = mysqli_query($conn, "SELECT `status`, `completed_by`, `instruction` FROM `order` WHERE `id` = '$id'");
 $current  = mysqli_fetch_assoc($checkSql);
 

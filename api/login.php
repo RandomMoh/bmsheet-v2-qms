@@ -18,8 +18,6 @@ $input_user = mysqli_real_escape_string($conn, $data->username);
 $password = $data->password;
 $role = $data->role;
 
-// ═══ MAINTENANCE MODE ═══
-// Set to false to allow all users to log in again.
 define('MAINTENANCE_MODE', false);
 $ALLOWED_USERS = ['M', 'Moh'];
 

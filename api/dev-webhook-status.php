@@ -9,7 +9,6 @@ if (!isset($_SESSION['dev_auth']) || $_SESSION['dev_auth'] !== true) {
 
 $statusFile = __DIR__ . '/webhook-status.json';
 
-// Ensure file exists
 if (!file_exists($statusFile)) {
     file_put_contents($statusFile, json_encode(["paused" => false]));
 }
@@ -24,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Handle GET
 $data = json_decode(file_get_contents($statusFile), true);
 if (!$data || !isset($data['paused'])) {
     $data = ["paused" => false];

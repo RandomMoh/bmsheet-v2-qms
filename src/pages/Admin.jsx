@@ -522,7 +522,6 @@ export default function AdminPortal() {
       .catch(() => { })
   }, [user])
 
-  // ── Keyboard Shortcuts ──
   useEffect(() => {
     const handler = (e) => {
       const tag = document.activeElement?.tagName

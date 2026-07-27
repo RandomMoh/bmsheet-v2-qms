@@ -2,7 +2,6 @@
 date_default_timezone_set('Asia/Karachi');
 require_once 'config.php';
 
-// SECURITY: Only Moh can access this endpoint
 if (!isset($_SESSION['username']) || $_SESSION['username'] !== 'Moh') {
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Access denied']);
@@ -13,7 +12,6 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'all';
 
 $response = [];
 
-// 1. Active sessions — who's online right now
 $sessions = mysqli_query($conn, "SELECT username, role, last_active, login_time, ip_address FROM `active_sessions` ORDER BY last_active DESC");
 $active = [];
 while ($row = mysqli_fetch_assoc($sessions)) {
@@ -39,7 +37,6 @@ while ($row = mysqli_fetch_assoc($sessions)) {
 }
 $response['active_sessions'] = $active;
 
-// 2. Activity log — recent actions
 $limit = ($type === 'all') ? 100 : 50;
 $filter = '';
 if ($type === 'admin') $filter = "WHERE role = 'admin'";

@@ -1,7 +1,6 @@
 <?php
 include 'config.php';
 
-// Auth check
 if (!isset($_SESSION['dev_auth']) || $_SESSION['dev_auth'] !== true) {
     http_response_code(401);
     echo json_encode(["status" => "error", "message" => "Unauthorized dev access"]);
@@ -28,11 +27,9 @@ if ($method === 'GET') {
     $is_active = isset($data['is_active']) ? (int)$data['is_active'] : 1;
 
     if (isset($data['id'])) {
-        // Update
         $id = (int)$data['id'];
         $sql = "UPDATE slack_channels SET channel_id='$channel_id', channel_name='$channel_name', workspace_id=$workspace_id, default_project='$default_project', default_department='$default_department', hint='$hint', is_active=$is_active WHERE id=$id";
     } else {
-        // Insert
         $sql = "INSERT INTO slack_channels (channel_id, channel_name, workspace_id, default_project, default_department, hint, is_active) VALUES ('$channel_id', '$channel_name', $workspace_id, '$default_project', '$default_department', '$hint', $is_active)";
     }
     if (mysqli_query($conn, $sql)) {
@@ -42,9 +39,7 @@ if ($method === 'GET') {
         error_log(mysqli_error($conn)); echo json_encode(["status" => "error", "message" => "Database error"]);
     }
 } elseif ($method === 'DELETE') {
-    // Some frameworks send DELETE payload in input stream
     $data = json_decode(file_get_contents('php://input'), true);
-    // If not in body, check query params
     if (!$data && isset($_GET['id'])) {
         $data = ['id' => $_GET['id']];
     }

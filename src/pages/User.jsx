@@ -526,7 +526,6 @@ export default function CSRPortal() {
   const [toast, setToast] = useState(null)
   const prevCount = useRef(0)
 
-  // Generate bell tone using Web Audio API — no external dependency
   const playBell = useRef(null)
   useEffect(() => {
     playBell.current = (times = 1) => {
@@ -702,7 +701,6 @@ export default function CSRPortal() {
     queryClient.refetchQueries({ queryKey: ['stats'] })
   }
 
-  // ── Keyboard Shortcuts ──
   useEffect(() => {
     const handler = (e) => {
       const tag = document.activeElement?.tagName
@@ -969,7 +967,6 @@ export default function CSRPortal() {
                             </tr>
                           )
                         }
-                        // done
                         return (() => {
                           const dur = elapsedStr(o['query-received_datetime'], o.query_done)
                           const bad = parseDurH(dur) > 8

@@ -1,23 +1,15 @@
 <?php
-// ═══════════════════════════════════════════════════════════════
-// SLACK WEBHOOK — receives events from Slack in real-time.
-// Uses a lean config with NO session, NO auth shield.
-// Slack calls this endpoint from their servers, not a browser.
-// ═══════════════════════════════════════════════════════════════
 include 'webhook-config.php';
 
-// Respond fast — Slack kills the connection after 3 seconds
 ignore_user_abort(true);
 set_time_limit(30);
 
-// ─── Debug logger ────────────────────────────────────────────
 function debugLog($message) {
     $logFile = __DIR__ . '/debug_webhook.log';
     $time = date('Y-m-d H:i:s');
     file_put_contents($logFile, "[$time] $message\n", FILE_APPEND);
 }
 
-// ─── Check Pause Status ──────────────────────────────────────
 $statusFile = __DIR__ . '/webhook-status.json';
 if (file_exists($statusFile)) {
     $statusData = json_decode(file_get_contents($statusFile), true);
@@ -29,7 +21,6 @@ if (file_exists($statusFile)) {
     }
 }
 
-// ─── ACK Slack immediately — prevents retry storms ───────────
 function ackSlack() {
     http_response_code(200);
     header('Content-Type: application/json');
@@ -44,7 +35,6 @@ function ackSlack() {
 
 debugLog("Webhook triggered.");
 
-// ─── Reject Slack retries — we already processed the original ─
 if (isset($_SERVER['HTTP_X_SLACK_RETRY_NUM'])) {
     $retryNum = (int)$_SERVER['HTTP_X_SLACK_RETRY_NUM'];
     debugLog("Slack retry #$retryNum. Acknowledging without reprocessing.");
@@ -53,10 +43,8 @@ if (isset($_SERVER['HTTP_X_SLACK_RETRY_NUM'])) {
     exit;
 }
 
-// ─── Read raw payload ────────────────────────────────────────
 $raw = file_get_contents('php://input');
 
-// ─── Rotate webhook log (cap at 500 KB) ─────────────────────
 $logPath = __DIR__ . '/webhook_log.txt';
 if (file_exists($logPath) && filesize($logPath) > 512000) {
     $lines = file($logPath);
@@ -72,7 +60,6 @@ if (!$payload || !is_array($payload)) {
     exit;
 }
 
-// ─── URL Verification (one-time during Slack app setup) ──────
 if (isset($payload['type']) && $payload['type'] === 'url_verification') {
     debugLog("URL verification challenge.");
     header('Content-Type: application/json');
@@ -80,7 +67,6 @@ if (isset($payload['type']) && $payload['type'] === 'url_verification') {
     exit;
 }
 
-// ─── Workspace lookup — determines which bot token to use ────
 $team_id = isset($payload['team_id']) ? $payload['team_id'] : '';
 $workspace_id = null;
 $bot_token = SLACK_BOT_TOKEN_FALLBACK;
@@ -102,7 +88,6 @@ if ($team_id) {
     }
 }
 
-// ─── Only process message events ─────────────────────────────
 if (!isset($payload['event']['type']) || $payload['event']['type'] !== 'message') {
     debugLog("Not a message event. Ignoring.");
     http_response_code(200);
@@ -119,30 +104,18 @@ $sender_bot  = isset($event['bot_id'])    ? $event['bot_id']       : '';
 $has_subtype = isset($event['subtype']);
 $subtype     = $has_subtype ? $event['subtype'] : '';
 
-// ═══════════════════════════════════════════════════════════════
-// CSR TEAM REGISTRY — Only these users' thread replies trigger
-// the "1st reply" timestamp. Client replies are ignored.
-//
-// To add a CSR: Slack profile → ⋮ → "Copy member ID"
-// ═══════════════════════════════════════════════════════════════
 $CSR_USER_IDS = [
     'U021771QZ9T', // Support Team
     'U09SF02BXJR', // Ahmed Hanif
     'U37QCSCEQ',   // orders@elementsproperty.co.uk
 ];
 
-// ─────────────────────────────────────────────────────────────
-// THREAD REPLY HANDLING — runs BEFORE the bot filter.
-// CSRs replying via Slack bots/integrations would otherwise be
-// dropped by the bot filter before we can stamp the reply time.
-// ─────────────────────────────────────────────────────────────
 if ($thread_ts) {
     if ($sender_user && in_array($sender_user, $CSR_USER_IDS)) {
         $esc_thread_ts = mysqli_real_escape_string($conn, $thread_ts);
         $replyNow      = date('Y-m-d H:i:s');
         $esc_replyNow  = mysqli_real_escape_string($conn, $replyNow);
 
-        // LIKE handles both single-order (exact ts) and multi-order (ts_ordernum)
         $update_sql = "UPDATE `order`
             SET `query-first-reply_datetime` = '$esc_replyNow'
             WHERE (`slack_ts` = '$esc_thread_ts' OR `slack_ts` LIKE '{$esc_thread_ts}\\_%')
@@ -164,9 +137,6 @@ if ($thread_ts) {
     exit;
 }
 
-// ─── Bot message filter ───────────────────────────────────────
-// Drop bot messages entirely. Allow file_share (image uploads)
-// since CSRs commonly send a photo as their order.
 if ($sender_user !== 'U37QCSCEQ') {
     if ($sender_bot || ($has_subtype && $subtype !== 'file_share')) {
         debugLog("Bot or non-file_share subtype ($subtype). Ignoring.");
@@ -175,9 +145,7 @@ if ($sender_user !== 'U37QCSCEQ') {
     }
 }
 
-// ─── Block CSR own messages (status updates, not orders) ─────
 $CSR_BLOCK_IDS = [
-    // 'U021771QZ9T', // Support Team — unblocked; uncomment to re-block
     'U09SF02BXJR', // Ahmed Hanif
 ];
 if (in_array($sender_user, $CSR_BLOCK_IDS)) {
@@ -186,14 +154,12 @@ if (in_array($sender_user, $CSR_BLOCK_IDS)) {
     exit;
 }
 
-// ─── Empty message guard ──────────────────────────────────────
 if ($text === '' && $subtype !== 'file_share') {
     debugLog("Empty text with no file. Ignoring.");
     http_response_code(200);
     exit;
 }
 
-// ─── Channel validation ───────────────────────────────────────
 $channelCtx   = null;
 $esc_channel  = mysqli_real_escape_string($conn, $channel);
 $ch_sql = "SELECT channel_name as name, default_department, default_project, hint
@@ -220,12 +186,8 @@ $defaultProj = $channelCtx['default_project'];
 
 debugLog("Processing new top-level message from #$channelName | sender: $sender_user");
 
-// ─── ACK Slack NOW, continue heavy processing after ──────────
 ackSlack();
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT CLEANUP — strip Slack markdown/URLs before AI processing
-// ═══════════════════════════════════════════════════════════════
 function cleanSlackText($text) {
     $text = preg_replace('/<@[A-Z0-9]+>/i',                  '@user',  $text);
     $text = preg_replace('/<#[A-Z0-9]+\|([^>]+)>/i',         '#$1',    $text);
@@ -238,8 +200,6 @@ function cleanSlackText($text) {
 
 $cleanText = cleanSlackText($text);
 
-// For file_share messages with no caption, still try to process
-// (Gemini will likely say is_order: false — that's fine)
 if (strlen($cleanText) < 3 && $subtype !== 'file_share') {
     debugLog("Message too short after cleanup: '$cleanText'. Ignoring.");
     exit;
@@ -249,9 +209,6 @@ if ($subtype === 'file_share' && strlen($cleanText) < 3) {
     $cleanText = '[File/image uploaded — no caption]';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// GROQ AI — parse the message and classify as order or not
-// ═══════════════════════════════════════════════════════════════
 function callGroq($prompt) {
     global $conn;
     $url  = 'https://api.groq.com/openai/v1/chat/completions';
@@ -316,7 +273,6 @@ function callGroq($prompt) {
         return null;
     }
 
-    // Strip any markdown code fences Groq might wrap the JSON in
     $aiText = preg_replace('/```(?:json)?\s*/i', '', $aiText);
     $aiText = trim($aiText);
     preg_match('/\{.*\}/s', $aiText, $matches);
@@ -331,7 +287,6 @@ function callGroq($prompt) {
     return array_change_key_case($parsed, CASE_LOWER);
 }
 
-// ─── Slack post helper ────────────────────────────────────────
 function slackPost($url, $postPayload, $token) {
     $sh = curl_init($url);
     curl_setopt_array($sh, [
@@ -352,7 +307,6 @@ function slackPost($url, $postPayload, $token) {
     return $res;
 }
 
-// ─── Valid field values for output validation ─────────────────
 $validProjectsList = ["3D","AH","AT","BB","Bierce","BR","Cubi","CB","CP 360 FP","CK","Capture","Code","Focal","Focal MP","Focal PB","Focal UI","Focal CAD","FNC","FS","GP","GF","HC","HSA","HM","HS","JH","JV","JL","MA","MD","ME","Metro","Mi","OH","Open House","PM","PRO","REM","Schematic","SA","Scan","Simple","Single","SKM","SM","TIFF","TQ","VG","WIN","Xactimate","ZFP","Roomio","Faro","FF","REFP"];
 $validDeptsList    = ["Floor Plan","Photo Enhancement","3D Floor Plan","Video Editing","Virtual Staging"];
 $validProjects     = implode(', ', $validProjectsList);
@@ -402,13 +356,11 @@ Return ONLY the JSON object. No explanation.';
 
 $parsed = callGroq($prompt);
 
-// ─── If AI fails, skip silently — CSR can manually enter ─────
 if ($parsed === null) {
     debugLog("SKIPPED: Groq failed for message from #$channelName. Text: " . substr($cleanText, 0, 100));
     exit;
 }
 
-// ─── Validate is_order ───────────────────────────────────────
 $isOrder = isset($parsed['is_order']) && ($parsed['is_order'] === true || $parsed['is_order'] === 'true' || $parsed['is_order'] === 1);
 
 if (!$isOrder) {
@@ -416,7 +368,6 @@ if (!$isOrder) {
     exit;
 }
 
-// ─── Sanitize AI output with fallbacks ───────────────────────
 $department = isset($parsed['department']) ? trim($parsed['department']) : '';
 if (!in_array($department, $validDeptsList)) {
     debugLog("AI returned invalid department '$department'. Using channel default.");
@@ -429,10 +380,6 @@ if (!in_array($projectName, $validProjectsList)) {
     $projectName = ($defaultProj !== '') ? $defaultProj : 'Unassigned';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CUSTOM BULLETPROOF ROUTING (E.g., Elements Property IE/FC logic)
-// ═══════════════════════════════════════════════════════════════
-// If the text contains specific markers, force the project and department
 if (strpos($cleanText, 'IE') !== false) {
     $department  = 'Photo Enhancement';
     $projectName = 'Single';
@@ -448,9 +395,6 @@ if ($type !== 'New Order' && $type !== 'Amend') {
     $type = 'New Order';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ORDER ID EXTRACTION — regex first, AI fallback
-// ═══════════════════════════════════════════════════════════════
 preg_match_all('/#(\d{4,7})/', $cleanText, $orderMatches);
 $extractedOrders = array_unique($orderMatches[1]);
 
@@ -461,9 +405,6 @@ if (empty($extractedOrders)) {
 
 debugLog("Found " . count($extractedOrders) . " order(s): " . implode(', #', $extractedOrders));
 
-// ═══════════════════════════════════════════════════════════════
-// DATABASE INSERT — one row per order number
-// ═══════════════════════════════════════════════════════════════
 $now   = date('Y-m-d H:i:s');
 $date  = date('Y-m-d');
 $year  = (int)date('Y');
@@ -487,7 +428,6 @@ foreach ($extractedOrders as $singleOrder) {
 
     $esc_orderId = mysqli_real_escape_string($conn, $singleOrder);
 
-    // Duplicate check: same order number on same calendar day
     $dup_res = mysqli_query($conn,
         "SELECT id FROM `order`
          WHERE `propery-order` = '$esc_orderId'
@@ -500,7 +440,6 @@ foreach ($extractedOrders as $singleOrder) {
         continue;
     }
 
-    // For multi-order messages, append order suffix to make slack_ts unique
     $orderTs     = (count($extractedOrders) > 1) ? $ts . '_' . $singleOrder : $ts;
     $esc_orderTs = mysqli_real_escape_string($conn, $orderTs);
 
@@ -523,7 +462,6 @@ foreach ($extractedOrders as $singleOrder) {
     }
 }
 
-// ─── Slack confirmation reply ─────────────────────────────────
 if (!empty($loggedOrders)) {
     if (count($loggedOrders) === 1) {
         $replyText = "✅ *Order Logged*\n"
@@ -544,14 +482,7 @@ if (!empty($loggedOrders)) {
         $replyText .= "\n⚠️ _Skipped (already logged today):_ #" . implode(', #', $skippedOrders);
     }
 
-    // Thread reply with order confirmation (Disabled per user request)
-    // slackPost('https://slack.com/api/chat.postMessage', [
-    //     'channel'   => $channel,
-    //     'text'      => $replyText,
-    //     'thread_ts' => $ts,
-    // ], $bot_token);
 
-    // Green checkmark reaction on original message
     slackPost('https://slack.com/api/reactions.add', [
         'channel'   => $channel,
         'name'      => 'white_check_mark',

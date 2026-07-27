@@ -17,7 +17,6 @@ if (empty($name) || empty($password)) {
     exit;
 }
 
-// Verify the senior password
 $configFile = __DIR__ . '/login_maker_config.json';
 if (!file_exists($configFile)) {
     echo json_encode(['status' => 'error', 'message' => 'Configuration not found']);
@@ -30,34 +29,27 @@ if ($password !== $config['login_maker_password']) {
     exit;
 }
 
-// Generate username
-// Like 'Mohsin CSR' -> 'mohsin'
 $base_name = trim(preg_replace('/\bcsr\b/i', '', $name));
 $username = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($base_name)));
 
-// Generate random password (8 chars)
 $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
 $userPassword = '';
 for ($i = 0; $i < 8; $i++) {
     $userPassword .= $chars[rand(0, strlen($chars) - 1)];
 }
 
-// Check if username already exists
 $stmt = $conn->prepare("SELECT d_id FROM user WHERE dusername = ?");
 $stmt->bind_param("s", $username);
 $stmt->execute();
 $res = $stmt->get_result();
 
 if ($res->num_rows > 0) {
-    // Append random number to username
     $username .= rand(10, 99);
 }
 $stmt->close();
 
 $role = 'user'; // Basic CSR
 
-// Since dpassword is varchar(20), we insert plaintext unless we alter the DB. 
-// Let's insert plaintext because login.php supports it and it fits.
 $stmt = $conn->prepare("INSERT INTO user (dusername, dname, dpassword, dstatus) VALUES (?, ?, ?, '1')");
 $stmt->bind_param("sss", $username, $name, $userPassword);
 

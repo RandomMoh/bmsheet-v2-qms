@@ -1,12 +1,10 @@
 <?php
-// Session persists for 8 hours — survives page reloads, only dies on browser close or logout
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_lifetime', 28800);   // 8 hours
 ini_set('session.gc_maxlifetime', 28800);     // Keep session data for 8h
 ini_set('session.cookie_samesite', 'None');   // Allow cross-origin (HTTPS API URL)
 ini_set('session.cookie_secure', 1);          // Required for SameSite=None
 
-// Isolate sessions from other cPanel apps to prevent aggressive GC deletion
 $session_path = __DIR__ . '/sessions';
 if (!is_dir($session_path)) {
     mkdir($session_path, 0777, true);
@@ -42,7 +40,6 @@ if (!$conn) {
     exit();
 }
 
-// Global Authentication Shield
 $script_name = basename($_SERVER['SCRIPT_NAME']);
 $exempt_scripts = [
     'login.php', 

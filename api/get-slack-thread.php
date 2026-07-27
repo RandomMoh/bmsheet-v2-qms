@@ -8,7 +8,6 @@ if (!isset($_GET['ts']) || empty($_GET['ts'])) {
 
 $ts = $_GET['ts'];
 
-// Validate ts format (numbers and dot)
 if (!preg_match('/^[0-9]+\.[0-9]+$/', $ts)) {
     echo json_encode(["status" => "error", "message" => "Invalid slack_ts format"]);
     exit;
@@ -16,7 +15,6 @@ if (!preg_match('/^[0-9]+\.[0-9]+$/', $ts)) {
 
 $hour = (int)date('G');
 
-// Fetch active channels with their workspace tokens
 $channel_sql = "
     SELECT c.channel_id, w.bot_token_shift1, w.bot_token_shift2, w.bot_token_shift3
     FROM slack_channels c
@@ -40,10 +38,8 @@ $found_messages = null;
 
 foreach ($channels as $c_row) {
     $channel_id = $c_row['channel_id'];
-    // Validate channel_id
     if (!preg_match('/^[A-Z0-9]+$/', $channel_id)) continue;
     
-    // Determine active token for this workspace (fallback to config if missing)
     if ($hour >= 8 && $hour < 16) {
         $token = !empty($c_row['bot_token_shift1']) ? $c_row['bot_token_shift1'] : SLACK_TOKEN_SHIFT1;
     } elseif ($hour >= 16 && $hour <= 23) {
@@ -79,14 +75,11 @@ foreach ($channels as $c_row) {
 }
 
 if ($found_messages) {
-    // Process messages
     $clean_messages = [];
     foreach ($found_messages as $msg) {
-        // Simple fallback for resolving users if we had a user map, but for now just pass ID or bot
         $user_id = isset($msg['user']) ? $msg['user'] : (isset($msg['bot_id']) ? $msg['bot_id'] : 'Unknown');
         
         $text = $msg['text'];
-        // Strip Slack formatting for UI display
         $text = preg_replace('/<@[A-Z0-9]+>/i', '@user', $text);
         $text = preg_replace('/<#[A-Z0-9]+\|([^>]+)>/i', '#$1', $text);
         $text = preg_replace('/<(https?:\/\/[^|>]+)\|([^>]+)>/i', '$2', $text);

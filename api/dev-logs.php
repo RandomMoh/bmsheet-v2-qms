@@ -15,7 +15,6 @@ if (!file_exists($logFile)) {
     exit;
 }
 
-// Efficiently read last N lines without loading the whole file
 $file = new SplFileObject($logFile, 'r');
 $file->seek(PHP_INT_MAX);
 $totalLines = $file->key();
