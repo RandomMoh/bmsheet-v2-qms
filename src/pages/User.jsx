@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
 import SlackThreadViewer from '../SlackThreadViewer'
+import { User as UserIcon } from 'lucide-react'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -414,7 +415,9 @@ function DrillDown({ u, onClose }) {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 6, background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 600, flexShrink: 0, color: 'var(--text-main)' }}>{initials}</div>
+            <div className="csr-avatar-wrapper" style={{ width: 48, height: 48, borderRadius: 6, background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--accent-primary)' }}>
+              <UserIcon className="csr-avatar-icon" size={24} strokeWidth={2} />
+            </div>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 4px', color: 'var(--text-main)' }}>{u.name}</h2>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Total Credit: {u.total} queries</p>
@@ -1033,7 +1036,7 @@ export default function CSRPortal() {
           ))}
         </nav>
         <div className="sb-foot">
-          <div className="sb-avatar">{initials}</div>
+          <div className="sb-avatar csr-avatar-wrapper" style={{background:'var(--bg-hover)', color:'var(--accent-primary)', display:'flex', alignItems:'center', justifyContent:'center'}}><UserIcon className="csr-avatar-icon" size={16} strokeWidth={2} /></div>
           <div className="sb-user-info">
             <div className="sb-user-name">{displayName}</div>
             <div className="sb-user-role">CSR</div>
@@ -1096,7 +1099,11 @@ export default function CSRPortal() {
                 ].map((s, i) => (
                   <div key={i} className={`metric ${s.c}`} style={{ padding: 24, borderRadius: 'var(--radius-lg)' }}>
                     <div className="metric-icon" style={{ marginBottom: 12 }}><Icon paths={s.i} size={20} /></div>
-                    <div className="metric-val" style={{ fontSize: 32, marginBottom: 4 }}>{s.v}</div>
+                    {dashQuery.isLoading ? (
+                      <div className="skeleton" style={{ height: 38, width: 60, marginBottom: 4, borderRadius: 6 }} />
+                    ) : (
+                      <div className="metric-val" style={{ fontSize: 32, marginBottom: 4 }}>{s.v}</div>
+                    )}
                     <div className="metric-label" style={{ fontSize: 14 }}>{s.l}</div>
                   </div>
                 ))}
@@ -1104,15 +1111,36 @@ export default function CSRPortal() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
-                {dashSorted.map(u => (
+                {dashQuery.isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200 }}>
+                          <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+                          <div>
+                            <div className="skeleton" style={{ height: 18, width: 100, marginBottom: 6, borderRadius: 4 }} />
+                            <div className="skeleton" style={{ height: 14, width: 60, borderRadius: 4 }} />
+                          </div>
+                       </div>
+                       <div style={{ display: 'flex', gap: 40, flex: 1, justifyContent: 'center' }}>
+                         {Array.from({ length: 4 }).map((_, j) => (
+                           <div key={j} style={{ textAlign: 'center' }}>
+                             <div className="skeleton" style={{ height: 22, width: 28, margin: '0 auto 6px', borderRadius: 4 }} />
+                             <div className="skeleton" style={{ height: 14, width: 40, borderRadius: 4 }} />
+                           </div>
+                         ))}
+                       </div>
+                       <div style={{ width: 40 }}></div>
+                    </div>
+                  ))
+                ) : dashSorted.map(u => (
                   <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                     <div 
                       onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
                       style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
-                          {u.name[0]?.toUpperCase() || '?'}
+                        <div className="csr-avatar-wrapper" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <UserIcon className="csr-avatar-icon" size={20} strokeWidth={2} />
                         </div>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-main)' }}>{u.name}</div>
@@ -1425,7 +1453,7 @@ export default function CSRPortal() {
           {section === 'profile' && (
             <div className="profile-card fade-up">
               <div className="panel" style={{ padding: 24 }}>
-                <div className="profile-avatar">{initials}</div>
+                <div className="profile-avatar csr-avatar-wrapper" style={{background:'var(--bg-hover)', color:'var(--accent-primary)', display:'flex', alignItems:'center', justifyContent:'center'}}><UserIcon className="csr-avatar-icon" size={32} strokeWidth={1.5} /></div>
                 {[['Display Name', displayName], ['Username', user.dusername || user.username || '—'], ['Role', 'CSR'], ['Status', 'Active']].map(([l, v]) => (
                   <div key={l} className="profile-row"><span className="profile-label">{l}</span><span className="profile-val">{v}</span></div>
                 ))}
