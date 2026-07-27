@@ -126,7 +126,7 @@ function classifyOrder(o, byUser) {
 function buildReport(orders, completedByNames) {
   const byUser = {}
   orders.filter(o => o.query_done).forEach(o => {
-    let name = (o.completed_by || '').trim()
+    let name = (o.qname || '').trim()
     if (!name) name = 'Unassigned'
     else if (completedByNames && completedByNames.length) {
       const match = completedByNames.find(c => c.values && c.values.includes(name))
@@ -619,7 +619,7 @@ export default function AdminPortal() {
     if (reportCsr) {
       const selected = completedByNames.find(c => c.display === reportCsr)
       const vals = selected ? selected.values : [reportCsr]
-      d = d.filter(o => vals.includes(o.completed_by))
+      d = d.filter(o => vals.includes(o.qname))
     }
     return d
   }, [orders, reportFrom, reportTo, reportCsr])
