@@ -515,7 +515,10 @@ const NAV_GROUPS = [
     { id: 'issue', label: 'Emailed / Issue', icon: IC.mail },
     { id: 'done', label: 'Done Queries', icon: IC.check },
   ]},
-  { label: 'Analytics', items: [{ id: 'reports', label: 'Reports', icon: IC.chart }] },
+  { label: 'Analytics', items: [
+    { id: 'reports', label: 'Reports', icon: IC.chart },
+    { id: 'qms_dashboard', label: 'QMS Dashboard', icon: IC.chart }
+  ] },
   { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: IC.user }] },
 ]
 const togBtn = a => ({ background: a ? 'var(--text-main)' : 'var(--bg-input)', border: `1.5px solid ${a ? 'var(--text-main)' : 'var(--border-strong)'}`, color: a ? 'var(--bg-panel)' : 'var(--text-main)', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .2s ease', flex: 1, fontFamily: 'inherit' })
@@ -951,7 +954,13 @@ export default function CSRPortal() {
               {g.items.map(n => {
                 const badge = sectionBadge(n.id)
                 return (
-                  <button key={n.id} onClick={() => { setSection(n.id); setMobileMenuOpen(false); setPage(1); setSearch('') }}
+                  <button key={n.id} onClick={() => { 
+                      if (n.id === 'qms_dashboard') {
+                        navigate('/dashboard');
+                      } else {
+                        setSection(n.id); setMobileMenuOpen(false); setPage(1); setSearch('');
+                      }
+                    }}
                     className={`sb-link${section === n.id ? ' active' : ''}`}>
                     <Icon paths={n.icon} size={14} style={{ color: section === n.id ? 'var(--accent-primary)' : 'var(--text-faint)' }} />
                     {n.label}

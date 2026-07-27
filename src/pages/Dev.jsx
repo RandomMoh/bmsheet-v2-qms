@@ -26,6 +26,11 @@ export default function Dev() {
   const [webhookPaused, setWebhookPaused] = useState(false)
   const logsContainerRef = useState(null)
   
+  const [activityLogs, setActivityLogs] = useState([])
+  const [activityLoading, setActivityLoading] = useState(false)
+  const [logFilterUser, setLogFilterUser] = useState('')
+  const [logFilterAction, setLogFilterAction] = useState('')
+  
   const [showPwdModal, setShowPwdModal] = useState(false)
   const [newPwd, setNewPwd] = useState('')
   const [pwdLoading, setPwdLoading] = useState(false)
@@ -44,6 +49,7 @@ export default function Dev() {
       fetchTelemetry()
       fetchLogs()
       fetchWebhookStatus()
+      fetchActivityLogs()
       telInterval = setInterval(fetchTelemetry, 10000)
       logInterval = setInterval(() => { if (!logsPaused) fetchLogs() }, 3000)
     }
@@ -98,6 +104,36 @@ export default function Dev() {
         }
       }
     } catch (err) { console.error(err) }
+  }
+
+  const fetchActivityLogs = async () => {
+    setActivityLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/get-activity-logs.php`)
+      if (res.ok) {
+        const data = await res.json()
+        setActivityLogs(data.data || [])
+      }
+    } catch (err) { console.error(err) }
+    setActivityLoading(false)
+  }
+
+  const exportActivityLogsPDF = async () => {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
+    const doc = new jsPDF('p', 'mm', 'a4')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(15, 23, 42)
+    doc.text('QMS — Activity Logs (Command Center)', 14, 20)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139)
+    doc.text(`Exported: ${new Date().toLocaleString()}  |  ${activityLogs.length} records`, 14, 28)
+    autoTable(doc, {
+      startY: 34, theme: 'grid',
+      head: [['ID', 'Time (PKT)', 'User', 'Role', 'Action', 'Details']],
+      body: activityLogs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).map(l => [l.id, l.timestamp_pkt, l.username, l.role.toUpperCase(), l.action, l.details]),
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 8, textColor: [51, 65, 85] },
+      columnStyles: { 0: { cellWidth: 15 }, 1: { cellWidth: 35 }, 2: { cellWidth: 30 }, 3: { cellWidth: 20 }, 4: { cellWidth: 35 }, 5: { cellWidth: 'auto' } }
+    })
+    doc.save(`qms_activity_logs_${new Date().getTime()}.pdf`)
   }
 
   const [editingId, setEditingId] = useState(null)
@@ -582,6 +618,61 @@ export default function Dev() {
               })
             )}
             <div />
+          </div>
+        </div>
+
+        {/* SYSTEM ACTIVITY MONITOR */}
+        <div className="stagger-item" style={{ animationDelay: '0.5s', marginTop: '60px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h3 className="dev-header-font" style={{ margin: '0 0 4px 0', fontSize: '20px' }}>
+                [ SYSTEM_ACTIVITY_MONITOR ] {activityLoading && <span className="terminal-blink" style={{ color: '#2DD4BF', fontSize: '14px' }}>●</span>}
+              </h3>
+              <p style={{ margin: 0, fontSize: '11px', color: '#71717A', letterSpacing: '0.05em' }}>
+                TRACKING_USER_ACTIONS. DISPLAYING: {activityLogs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).length}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select value={logFilterUser} onChange={e => setLogFilterUser(e.target.value)} className="brutalist-input" style={{ padding: '6px 14px', fontSize: '11px', backgroundColor: '#050505', color: '#EAEAEA' }}>
+                <option value="">[ ALL_USERS ]</option>
+                {Array.from(new Set(activityLogs.map(l => l.username))).map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+              <select value={logFilterAction} onChange={e => setLogFilterAction(e.target.value)} className="brutalist-input" style={{ padding: '6px 14px', fontSize: '11px', backgroundColor: '#050505', color: '#EAEAEA' }}>
+                <option value="">[ ALL_ACTIONS ]</option>
+                {Array.from(new Set(activityLogs.map(l => l.action))).map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <button onClick={fetchActivityLogs} className="brutalist-btn brutalist-btn-ghost" style={{ padding: '6px 14px', fontSize: '11px' }}>↺ REFRESH</button>
+              <button onClick={exportActivityLogsPDF} className="brutalist-btn brutalist-btn-primary" style={{ padding: '6px 14px', fontSize: '11px', backgroundColor: '#2DD4BF', color: '#000' }}>EXPORT_PDF</button>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gap: '1px', backgroundColor: '#333333', border: '1px solid #333333' }}>
+            <div className="dev-table-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(60px, 80px) minmax(140px, 180px) minmax(120px, 150px) minmax(80px, 100px) minmax(120px, 160px) 1fr', gap: '1px', backgroundColor: '#333333' }}>
+              {['ID', 'TIME_PKT', 'USER', 'ROLE', 'ACTION', 'DETAILS'].map(h => (
+                <div key={h} style={{ padding: '12px 16px', backgroundColor: '#050505', color: '#71717A', fontSize: '11px', letterSpacing: '0.1em' }}>{h}</div>
+              ))}
+            </div>
+            
+            <div style={{ maxHeight: '400px', overflowY: 'auto', backgroundColor: '#010101', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+              {activityLogs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).length === 0 ? (
+                <div style={{ padding: '60px', backgroundColor: '#0A0A0A', textAlign: 'center', color: '#71717A' }}>
+                  NO_ACTIVITY_LOGS_FOUND.
+                </div>
+              ) : activityLogs.filter(l => (!logFilterUser || l.username === logFilterUser) && (!logFilterAction || l.action === logFilterAction)).map(l => (
+                <div key={l.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(60px, 80px) minmax(140px, 180px) minmax(120px, 150px) minmax(80px, 100px) minmax(120px, 160px) 1fr', gap: '1px', backgroundColor: '#333333' }}>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '13px', color: '#EAEAEA' }}>{l.id}</div>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '12px', color: '#71717A' }}>{l.timestamp_pkt}</div>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '13px', color: '#EAEAEA', fontWeight: 600 }}>{l.username}</div>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '11px' }}>
+                    <span style={{ border: `1px solid ${l.role === 'admin' ? '#F59E0B' : '#3B82F6'}`, color: l.role === 'admin' ? '#F59E0B' : '#3B82F6', padding: '2px 6px' }}>{l.role.toUpperCase()}</span>
+                  </div>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '11px' }}>
+                    <span style={{ border: '1px solid #10B981', color: '#10B981', padding: '2px 6px' }}>{l.action}</span>
+                  </div>
+                  <div style={{ padding: '12px 16px', backgroundColor: '#0A0A0A', fontSize: '12px', color: '#EAEAEA', wordBreak: 'break-word' }}>{l.details}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
