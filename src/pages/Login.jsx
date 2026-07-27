@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from '../ThemeToggle'
-import WebGLBackground from '../components/WebGLBackground'
+
+const WebGLBackground = lazy(() => import('../components/WebGLBackground'))
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
 
@@ -82,7 +83,9 @@ export default function Login() {
         <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundSize: '128px', pointerEvents: 'none', zIndex: 1 }} />
 
         {/* Cinematic WebGL Sphere */}
-        <WebGLBackground />
+        <Suspense fallback={null}>
+          <WebGLBackground />
+        </Suspense>
 
         <div className="glass-block-1" style={{ position: 'absolute', top: '12%', left: '6%', width: 280, height: 180, background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
         <div className="glass-block-2" style={{ position: 'absolute', bottom: '15%', right: '8%', width: 220, height: 140, background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', pointerEvents: 'none' }} />

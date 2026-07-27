@@ -82,41 +82,50 @@ function parseDurH(s) {
   if (s.includes('h')) { const [hr] = s.split('h'); h += parseInt(hr) }
   return h
 }
-function classifyOrder(o, byUser) {
-  const name = (o.completed_by || '').trim() || 'Unassigned'
+function initUserStats(byUser, name) {
   if (!byUser[name]) byUser[name] = {
-    name, total: 0, newOrd: 0, amend: 0, orders: [],
+    name, total: 0, enteredTotal: 0, completedTotal: 0, newOrd: 0, amend: 0, orders: [],
     depts: {}, projects: {}, types: {},
     reply_5: 0, reply_15: 0, reply_30: 0, reply_over30: 0, reply_na: 0,
     done_45m: 0, done_2h: 0, done_6h: 0, done_8h: 0, done_12h: 0, done_over12: 0,
   }
-  const u = byUser[name]
-  u.total++
-  u.orders.push(o)
+}
+
+function classifyOrder(o, byUser, firstOwner, completionOwner) {
+  const cName = completionOwner || 'Unassigned'
+  initUserStats(byUser, cName)
+  const cU = byUser[cName]
+  cU.total++
+  cU.orders.push(o)
   const type = (o.type || '').toLowerCase()
-  if (type.includes('new')) u.newOrd++
-  else if (type.includes('amend')) u.amend++
+  if (type.includes('new')) cU.newOrd++
+  else if (type.includes('amend')) cU.amend++
   const dept = o.department || 'Unknown'
   const proj = o.project_name || 'Unknown'
   const tp = o.type || 'Unknown'
-  u.depts[dept] = (u.depts[dept] || 0) + 1
-  u.projects[proj] = (u.projects[proj] || 0) + 1
-  u.types[tp] = (u.types[tp] || 0) + 1
-  const rm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
-  if (!o['query-first-reply_datetime'] || rm === null) u.reply_na++
-  else if (rm <= 5) u.reply_5++
-  else if (rm <= 15) u.reply_15++
-  else if (rm <= 30) u.reply_30++
-  else u.reply_over30++
+  cU.depts[dept] = (cU.depts[dept] || 0) + 1
+  cU.projects[proj] = (cU.projects[proj] || 0) + 1
+  cU.types[tp] = (cU.types[tp] || 0) + 1
+
   const dm = diffMin(o['query-received_datetime'], o.query_done)
   if (dm !== null) {
-    if (dm <= 45) u.done_45m++
-    else if (dm <= 120) u.done_2h++
-    else if (dm <= 360) u.done_6h++
-    else if (dm <= 480) u.done_8h++
-    else if (dm <= 720) u.done_12h++
-    else u.done_over12++
+    if (dm <= 45) cU.done_45m++
+    else if (dm <= 120) cU.done_2h++
+    else if (dm <= 360) cU.done_6h++
+    else if (dm <= 480) cU.done_8h++
+    else if (dm <= 720) cU.done_12h++
+    else cU.done_over12++
   }
+
+  const fName = firstOwner || 'Unassigned'
+  initUserStats(byUser, fName)
+  const fU = byUser[fName]
+  const rm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+  if (!o['query-first-reply_datetime'] || rm === null) fU.reply_na++
+  else if (rm <= 5) fU.reply_5++
+  else if (rm <= 15) fU.reply_15++
+  else if (rm <= 30) fU.reply_30++
+  else fU.reply_over30++
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL
@@ -205,13 +214,29 @@ function QueryTimeline({ order, onClose }) {
 function buildReport(orders, completedByNames) {
   const byUser = {}
   orders.filter(o => o.query_done).forEach(o => {
-    let name = (o.qname || '').trim()
-    if (!name) name = 'Unassigned'
+    let enterer = (o.qname || '').trim()
+    if (!enterer) enterer = 'Unassigned'
     else if (completedByNames && completedByNames.length) {
-      const match = completedByNames.find(c => c.values && c.values.includes(name))
-      if (match) name = match.display
+      const match = completedByNames.find(c => c.values && c.values.includes(enterer))
+      if (match) enterer = match.display
     }
-    classifyOrder({ ...o, completed_by: name }, byUser)
+
+    let completer = (o.completed_by || '').trim()
+    if (!completer) completer = 'Unassigned'
+
+    const isSlack = (o.communication_medium === 'Slack' || (o.qname || '').toLowerCase().includes('slack'))
+    
+    const completionOwner = isSlack ? completer : enterer
+    const firstOwner = enterer
+
+    classifyOrder(o, byUser, firstOwner, completionOwner)
+
+    if (!isSlack) {
+      initUserStats(byUser, enterer)
+      byUser[enterer].enteredTotal++
+    }
+    initUserStats(byUser, completer)
+    byUser[completer].completedTotal++
   })
   return byUser
 }
@@ -219,79 +244,94 @@ function buildReport(orders, completedByNames) {
 async function exportUserPDF(u) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF('p')
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(15, 23, 42)
-  doc.text(`${u.name} — Performance Report`, 14, 20)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139)
-  doc.text(`Generated: ${new Date().toLocaleString()}  |  ${u.total} completed queries`, 14, 28)
+  
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.setTextColor(20, 20, 20)
+  doc.text(u.name, 14, 24)
+  
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(120, 120, 120)
+  doc.text(`Performance Report   //   Generated: ${new Date().toLocaleString()}`, 14, 32)
 
   autoTable(doc, {
-    startY: 36, theme: 'grid',
-    head: [['Metric', 'Value']],
-    body: [['Total', u.total], ['New Orders', u.newOrd], ['Amendments', u.amend]],
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 9 }, styles: { cellPadding: 3 },
+    startY: 42,
+    theme: 'plain',
+    head: [['Total Credit', 'Entered', 'Completed', 'New', 'Amend']],
+    body: [[u.total, u.enteredTotal, u.completedTotal, u.newOrd, u.amend]],
+    headStyles: { textColor: [120, 120, 120], fontSize: 8, fontStyle: 'bold', cellPadding: { top: 4, bottom: 4 } },
+    bodyStyles: { textColor: [20, 20, 20], fontSize: 16, fontStyle: 'bold' },
+    styles: { cellPadding: 2 },
+    margin: { left: 14 }
   })
 
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10, theme: 'grid',
-    head: [['1st Reply Time', '\u22645m', '5-15m', '15-30m', '>30m', 'N/A']],
-    body: [[u.name, u.reply_5, u.reply_15, u.reply_30, u.reply_over30, u.reply_na]],
-    headStyles: { fillColor: [30, 64, 175], textColor: 255, fontSize: 8, fontStyle: 'bold', halign: 'center' },
-    bodyStyles: { fontSize: 9, halign: 'center' },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
-    styles: { cellPadding: 3 },
+    startY: doc.lastAutoTable.finalY + 16,
+    theme: 'plain',
+    head: [['1st Reply Time', '<5m', '5-15m', '15-30m', '>30m', 'N/A']],
+    body: [['Count', u.reply_5, u.reply_15, u.reply_30, u.reply_over30, u.reply_na]],
+    headStyles: { textColor: [20, 20, 20], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+    bodyStyles: { fontSize: 10, halign: 'center', textColor: [80, 80, 80] },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', textColor: [120, 120, 120], fontSize: 8 } },
+    alternateRowStyles: { fillColor: [251, 252, 253] },
+    styles: { cellPadding: 6, lineColor: [235, 235, 235], lineWidth: { bottom: 0.1 } },
+    margin: { left: 14 }
   })
 
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10, theme: 'grid',
-    head: [['Completion Time', '\u226445m', '\u22642h', '\u22646h', '\u22648h', '\u226412h', '>12h']],
-    body: [[u.name, u.done_45m, u.done_2h, u.done_6h, u.done_8h, u.done_12h, u.done_over12]],
-    headStyles: { fillColor: [30, 64, 175], textColor: 255, fontSize: 8, fontStyle: 'bold', halign: 'center' },
-    bodyStyles: { fontSize: 9, halign: 'center' },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
-    styles: { cellPadding: 3 },
+    startY: doc.lastAutoTable.finalY + 12,
+    theme: 'plain',
+    head: [['Completion Time', '<45m', '<2h', '<6h', '<8h', '<12h', '>12h']],
+    body: [['Count', u.done_45m, u.done_2h, u.done_6h, u.done_8h, u.done_12h, u.done_over12]],
+    headStyles: { textColor: [20, 20, 20], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+    bodyStyles: { fontSize: 10, halign: 'center', textColor: [80, 80, 80] },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', textColor: [120, 120, 120], fontSize: 8 } },
+    alternateRowStyles: { fillColor: [251, 252, 253] },
+    styles: { cellPadding: 6, lineColor: [235, 235, 235], lineWidth: { bottom: 0.1 } },
+    margin: { left: 14 }
   })
 
   const typeEntries = Object.entries(u.types).sort((a, b) => b[1] - a[1])
   if (typeEntries.length) {
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, theme: 'grid',
+      startY: doc.lastAutoTable.finalY + 12, theme: 'plain',
       head: [['Order Type', 'Count']],
-      body: typeEntries,
-      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 9 }, styles: { cellPadding: 3 },
-    })
-  }
-
-  const deptEntries = Object.entries(u.depts).sort((a, b) => b[1] - a[1])
-  if (deptEntries.length) {
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, theme: 'grid',
-      head: [['Department', 'Count']],
-      body: deptEntries,
-      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 9 }, styles: { cellPadding: 3 },
+      body: typeEntries.slice(0, 5),
+      headStyles: { textColor: [20, 20, 20], fontSize: 8, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 9, textColor: [80, 80, 80] },
+      alternateRowStyles: { fillColor: [251, 252, 253] },
+      styles: { cellPadding: 5, lineColor: [235, 235, 235], lineWidth: { bottom: 0.1 } },
+      margin: { left: 14 }
     })
   }
 
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10, theme: 'striped',
-    head: [['#', 'Order', 'Type', 'Time Taken']],
+    startY: doc.lastAutoTable.finalY + 16,
+    theme: 'plain',
+    head: [['#', 'Order', 'Entered By', 'Completed By', 'Type', 'Time Taken']],
     body: u.orders.map((o, i) => {
       const dm = diffMin(o['query-received_datetime'], o.query_done)
-      return [i + 1, o['propery-order'] || '\u2014', o.type || '\u2014', durStr(dm)]
+      return [i + 1, o['propery-order'] || '\u2014', o.qname || '\u2014', o.completed_by || '\u2014', o.type || '\u2014', durStr(dm)]
     }),
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 7, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 7 },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { cellPadding: 2, overflow: 'ellipsize' },
-    columnStyles: { 0: { cellWidth: 15 }, 1: { cellWidth: 85 } },
+    headStyles: { textColor: [20, 20, 20], fontSize: 7, fontStyle: 'bold' },
+    bodyStyles: { fontSize: 7, textColor: [80, 80, 80] },
+    alternateRowStyles: { fillColor: [251, 252, 253] },
+    styles: { cellPadding: 4, lineColor: [235, 235, 235], lineWidth: { bottom: 0.1 }, overflow: 'ellipsize' },
+    columnStyles: { 
+      0: { cellWidth: 10 },
+      1: { cellWidth: 50, fontStyle: 'bold', textColor: [20, 20, 20] },
+      5: { fontStyle: 'bold' }
+    },
+    margin: { left: 14 }
   })
 
-  doc.setFontSize(7); doc.setTextColor(148, 163, 184)
-  doc.text('QMS \u00a9 Benchmark Studio \u2014 Confidential', 14, doc.internal.pageSize.height - 8)
-  doc.save(`QMS_${u.name.replace(/\s+/g, '_')}_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
+  doc.setFontSize(8)
+  doc.setTextColor(150, 150, 150)
+  doc.text('QMS \u00a9 Benchmark Studio \u2014 Confidential', 14, doc.internal.pageSize.height - 12)
+  doc.save(`${u.name.replace(/\s+/g, '_')}_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
 }
+
 function DrillDown({ u, onClose }) {
   const replyBuckets = [
     { l: '≤5m', v: u.reply_5, good: true },
@@ -336,11 +376,11 @@ function DrillDown({ u, onClose }) {
             <div style={{ width: 48, height: 48, borderRadius: 6, background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 600, flexShrink: 0, color: 'var(--text-main)' }}>{initials}</div>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 4px', color: 'var(--text-main)' }}>{u.name}</h2>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Completed {u.total} quer{u.total === 1 ? 'y' : 'ies'}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Total Credit: {u.total} queries</p>
             </div>
           </div>
-          <div className="stagger-parent" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 32 }}>
-            {[{ l: 'Total', v: u.total }, { l: 'New', v: u.newOrd }, { l: 'Amend', v: u.amend }].map(x => (
+          <div className="stagger-parent" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginTop: 32 }}>
+            {[{ l: 'Entered', v: u.enteredTotal }, { l: 'Completed', v: u.completedTotal }, { l: 'New', v: u.newOrd }, { l: 'Amend', v: u.amend }].map(x => (
               <div key={x.l} style={{ background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '16px', textAlign: 'center' }}>
                 <p style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px', fontVariantNumeric: 'tabular-nums' }}>{x.v}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>{x.l}</p>
@@ -411,8 +451,10 @@ function DrillDown({ u, onClose }) {
                 const dm = diffMin(o['query-received_datetime'], o.query_done)
                 const bad = dm !== null && dm > 120
                 return (
-                  <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 12, padding: '12px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: 13 }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)', fontWeight: 500 }}>{o['propery-order'] || '—'}</div>
+                  <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 80px 70px', gap: 12, padding: '12px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: 12 }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)', fontWeight: 600 }}>{o['propery-order'] || '—'}</div>
+                    <div style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`Entered by: ${o.qname || '—'}`}>E: {o.qname ? o.qname.split(' ')[0] : '—'}</div>
+                    <div style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`Completed by: ${o.completed_by || '—'}`}>C: {o.completed_by ? o.completed_by.split(' ')[0] : '—'}</div>
                     <div style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.type}</div>
                     <div style={{ fontWeight: 500, color: bad ? 'var(--status-danger)' : 'var(--text-main)', textAlign: 'right', flexShrink: 0 }}>{durStr(dm)}</div>
                   </div>
@@ -1122,10 +1164,12 @@ export default function CSRPortal() {
               </div>
 
               {[
-                { title: 'Summary', hint: 'Click a row for details', cols: ['User','Total','New','Amend',''], render: u => (
+                { title: 'Summary', hint: 'Click a row for details', cols: ['User','Entered','Completed','Total Credit','New','Amend',''], render: u => (
                   <tr key={u.name} className="stagger" style={{ cursor: 'pointer' }} onClick={() => setDrillUser(u)}>
                     <td className="cell-bold">{u.name}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{u.total}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{u.enteredTotal}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{u.completedTotal}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--accent-primary)' }}>{u.total}</td>
                     <td style={{ textAlign: 'center' }} className="cell-good">{u.newOrd}</td>
                     <td style={{ textAlign: 'center' }} className="cell-warn">{u.amend}</td>
                     <td style={{ textAlign: 'center' }}><Icon paths={IC.arrowR} size={12} /></td>
