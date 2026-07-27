@@ -515,7 +515,11 @@ function ProjectSelect({ selected, onChange, allProjects }) {
           {allProjects.map(p => (
             <div key={p} onClick={() => toggle(p)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', background: selected.includes(p) ? 'var(--bg-hover)' : 'transparent', fontSize: 13, transition: '0.15s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'} onMouseLeave={e => e.currentTarget.style.background = selected.includes(p) ? 'var(--bg-hover)' : 'transparent'}>
               <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${selected.includes(p) ? 'var(--accent-primary)' : 'var(--border-strong)'}`, background: selected.includes(p) ? 'var(--accent-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.15s ease' }}>
-                {selected.includes(p) && <Icon paths={['M20 6L9 17l-5-5']} size={14} style={{ color: '#fff' }} />}
+                {selected.includes(p) && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1.5 4L3.5 6.5L8.5 1.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </div>
               <span style={{ fontWeight: selected.includes(p) ? 500 : 400, color: selected.includes(p) ? 'var(--text-main)' : 'var(--text-muted)' }}>{p}</span>
             </div>
