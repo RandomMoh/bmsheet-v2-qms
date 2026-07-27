@@ -773,7 +773,7 @@ export default function CSRPortal() {
   const doneOrds = Array.isArray(doneQuery.data) ? doneQuery.data : []
   const loading = !statsQuery.data && statsQuery.isLoading
 
-  const dashOrdersData = Array.isArray(dashQuery.data) ? dashQuery.data : []
+  const dashOrdersData = dashQuery.data?.data || (Array.isArray(dashQuery.data) ? dashQuery.data : [])
   const dashReport = useMemo(() => buildReportWithPending(dashOrdersData, completedByNames), [dashOrdersData, completedByNames])
   const dashSorted = useMemo(() => Object.values(dashReport).sort((a, b) => b.completedTotal - a.completedTotal), [dashReport])
   const dashAgg = useMemo(() => {
@@ -1070,12 +1070,12 @@ export default function CSRPortal() {
               <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '16px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div>
-                    <label className="lbl" style={{ marginBottom: 4 }}>Date From</label>
-                    <input type="date" value={dashFrom} onChange={e => setDashFrom(e.target.value)} className="inp" style={{ background: 'var(--bg-base)' }} />
+                    <label className="lbl" style={{ marginBottom: 4, display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date From</label>
+                    <input type="date" value={dashFrom} onChange={e => setDashFrom(e.target.value)} className="inp" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }} />
                   </div>
                   <div>
-                    <label className="lbl" style={{ marginBottom: 4 }}>Date To</label>
-                    <input type="date" value={dashTo} onChange={e => setDashTo(e.target.value)} className="inp" style={{ background: 'var(--bg-base)' }} />
+                    <label className="lbl" style={{ marginBottom: 4, display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date To</label>
+                    <input type="date" value={dashTo} onChange={e => setDashTo(e.target.value)} className="inp" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
                      {(dashFrom || dashTo) && <button onClick={() => { setDashFrom(''); setDashTo('') }} className="btn btn-ghost btn-sm" style={{ height: 38 }}>Reset Dates</button>}
