@@ -57,7 +57,7 @@ if ($role === 'admin') {
     }
 }
 else if ($role === 'user') {
-    $q = mysqli_query($conn, "SELECT d_id, dusername, dname, dpassword FROM user WHERE dusername = '$input_user'");
+    $q = mysqli_query($conn, "SELECT d_id, dusername, dname, dpassword, project_filter FROM user WHERE dusername = '$input_user'");
     if (!$q) {
         echo json_encode(["status" => "error", "message" => "User DB Error: " . mysqli_error($conn)]);
         exit();
@@ -73,7 +73,7 @@ else if ($role === 'user') {
             echo json_encode([
                 "status" => "success",
                 "role" => "user",
-                "user" => ["id" => $row['d_id'], "username" => $row['dusername'], "name" => $row['dname']]
+                "user" => ["id" => $row['d_id'], "username" => $row['dusername'], "name" => $row['dname'], "project_filter" => $row['project_filter']]
             ]);
             exit();
         }

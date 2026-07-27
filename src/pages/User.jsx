@@ -25,6 +25,7 @@ const IC = {
   eye: ['M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z', 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
   chevL: ['M15 18l-6-6 6-6'],
   chevR: ['M9 18l6-6-6-6'],
+  chevD: ['M6 9l6 6 6-6'],
   bell: ['M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9', 'M13.73 21a2 2 0 0 1-3.46 0'],
   chart: ['M18 20V10', 'M12 20V4', 'M6 20v-6'],
   arrowR: ['M5 12h14', 'M12 5l7 7-7 7'],
@@ -477,6 +478,54 @@ const NAV_GROUPS = [
 ]
 const togBtn = a => ({ background: a ? 'var(--text-main)' : 'var(--bg-input)', border: `1.5px solid ${a ? 'var(--text-main)' : 'var(--border-strong)'}`, color: a ? 'var(--bg-panel)' : 'var(--text-main)', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .2s ease', flex: 1, fontFamily: 'inherit' })
 
+function ProjectSelect({ selected, onChange, allProjects }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+  
+  useEffect(() => {
+    const clickOut = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', clickOut)
+    return () => document.removeEventListener('mousedown', clickOut)
+  }, [])
+
+  const toggle = (p) => {
+    if (selected.includes(p)) onChange(selected.filter(x => x !== p))
+    else onChange([...selected, p])
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', width: 220, flexShrink: 0 }}>
+      <label className="lbl">Projects Filter</label>
+      <div 
+        className="inp" 
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} 
+        onClick={() => setOpen(!open)}
+      >
+        <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: selected.length ? 'inherit' : 'var(--text-faint)' }}>
+          {selected.length === 0 ? 'All Projects' : selected.length === 1 ? selected[0] : `${selected.length} Selected`}
+        </span>
+        <Icon paths={IC.chevD} size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: '0.2s cubic-bezier(0.16, 1, 0.3, 1)', color: 'var(--text-faint)' }} />
+      </div>
+      {open && (
+        <div className="anim-slide-down" style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 50, background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: 300, overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 2, transformOrigin: 'top center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', borderBottom: '1px solid var(--border-subtle)', marginBottom: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{selected.length} Selected</span>
+            {selected.length > 0 && <button onClick={() => onChange([])} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>Clear</button>}
+          </div>
+          {allProjects.map(p => (
+            <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', background: selected.includes(p) ? 'var(--bg-hover)' : 'transparent', fontSize: 13, transition: '0.15s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'} onMouseLeave={e => e.currentTarget.style.background = selected.includes(p) ? 'var(--bg-hover)' : 'transparent'}>
+              <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${selected.includes(p) ? 'var(--accent-primary)' : 'var(--border-strong)'}`, background: selected.includes(p) ? 'var(--accent-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.15s ease' }}>
+                {selected.includes(p) && <Icon paths={[IC.check[1]]} size={12} style={{ color: '#fff' }} />}
+              </div>
+              <span style={{ fontWeight: selected.includes(p) ? 500 : 400, color: selected.includes(p) ? 'var(--text-main)' : 'var(--text-muted)' }}>{p}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CSRPortal() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -485,6 +534,7 @@ export default function CSRPortal() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedProjects, setSelectedProjects] = useState([])
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const PP = 50
@@ -550,8 +600,28 @@ export default function CSRPortal() {
   useEffect(() => {
     const s = sessionStorage.getItem('qmsUser'), r = sessionStorage.getItem('qmsRole')
     if (!s || r !== 'user') { navigate('/'); return }
-    setUser(JSON.parse(s))
+    const u = JSON.parse(s)
+    setUser(u)
+    if (u.project_filter) {
+      try { setSelectedProjects(JSON.parse(u.project_filter)) } catch (e) {}
+    }
   }, [navigate])
+
+  const handleProjectFilterChange = (newProjects) => {
+    setSelectedProjects(newProjects)
+    setPage(1)
+    fetch(`${API}/update-project-filter.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projects: newProjects })
+    }).then(r => r.json()).then(data => {
+      if (data.status === 'success') {
+         const u = { ...user, project_filter: JSON.stringify(newProjects) }
+         setUser(u)
+         sessionStorage.setItem('qmsUser', JSON.stringify(u))
+      }
+    }).catch(console.error)
+  }
 
   const dp = (fromDate || toDate) ? `?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}` : ''
   const donep = (reportFrom || reportTo) ? `?from_date=${encodeURIComponent(reportFrom)}&to_date=${encodeURIComponent(reportTo)}` : ''
@@ -604,7 +674,17 @@ export default function CSRPortal() {
   const loading = !statsQuery.data && statsQuery.isLoading
 
   const list = section === 'current' ? curOrds : section === 'issue' ? issOrds : doneOrds
-  const filtered = useMemo(() => { if (!search.trim()) return list; const q = search.toLowerCase(); return list.filter(o => Object.values(o).some(v => String(v ?? '').toLowerCase().includes(q))) }, [list, search])
+  const filtered = useMemo(() => {
+    let res = list;
+    if (selectedProjects.length > 0) {
+      res = res.filter(o => selectedProjects.includes(o.project_name))
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      res = res.filter(o => Object.values(o).some(v => String(v ?? '').toLowerCase().includes(q)))
+    }
+    return res;
+  }, [list, search, selectedProjects])
   const totalPages = Math.ceil(filtered.length / PP), visible = filtered.slice((page - 1) * PP, page * PP)
 
   const reportOrders = useMemo(() => {
@@ -890,6 +970,7 @@ export default function CSRPortal() {
                 <div><label className="lbl">From</label><input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1) }} className="inp" /></div>
                 <div><label className="lbl">To</label><input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1) }} className="inp" /></div>
               </>}
+              <ProjectSelect selected={selectedProjects} onChange={handleProjectFilterChange} allProjects={PROJECTS} />
               <div style={{ flex: '1 1 200px' }}>
                 <label className="lbl">Search</label>
                 <div className="inp-icon-wrap">
