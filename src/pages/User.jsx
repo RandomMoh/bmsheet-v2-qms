@@ -513,12 +513,12 @@ function ProjectSelect({ selected, onChange, allProjects }) {
             {selected.length > 0 && <button onClick={() => onChange([])} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>Clear</button>}
           </div>
           {allProjects.map(p => (
-            <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', background: selected.includes(p) ? 'var(--bg-hover)' : 'transparent', fontSize: 13, transition: '0.15s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'} onMouseLeave={e => e.currentTarget.style.background = selected.includes(p) ? 'var(--bg-hover)' : 'transparent'}>
+            <div key={p} onClick={() => toggle(p)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', background: selected.includes(p) ? 'var(--bg-hover)' : 'transparent', fontSize: 13, transition: '0.15s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'} onMouseLeave={e => e.currentTarget.style.background = selected.includes(p) ? 'var(--bg-hover)' : 'transparent'}>
               <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${selected.includes(p) ? 'var(--accent-primary)' : 'var(--border-strong)'}`, background: selected.includes(p) ? 'var(--accent-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.15s ease' }}>
                 {selected.includes(p) && <Icon paths={[IC.check[1]]} size={12} style={{ color: '#fff' }} />}
               </div>
               <span style={{ fontWeight: selected.includes(p) ? 500 : 400, color: selected.includes(p) ? 'var(--text-main)' : 'var(--text-muted)' }}>{p}</span>
-            </label>
+            </div>
           ))}
         </div>
       )}
