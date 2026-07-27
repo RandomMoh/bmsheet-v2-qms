@@ -40,7 +40,7 @@ export default function Login() {
           sessionStorage.setItem('qmsUser', JSON.stringify(data.user))
           sessionStorage.setItem('qmsRole', data.role)
           window.dispatchEvent(new Event('auth_change'))
-          navigate(`/dashboard`)
+          navigate(`/user`)
         } else {
           setAuthModalVisible(false)
           setError(data.message)

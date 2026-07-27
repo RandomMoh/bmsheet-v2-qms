@@ -2,8 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const Login = lazy(() => import('./pages/Login'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
+import Login from './pages/Login'
 const CSRDashboard = lazy(() => import('./pages/User'))
 const Dev = lazy(() => import('./pages/Dev'))
 import CursorTrail from './CursorTrail'
@@ -33,7 +32,6 @@ function App() {
         <Suspense fallback={<Loader />}>
           <Routes>
             <Route path="/" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/user" element={<CSRDashboard />} />
             <Route path="/dev" element={<Dev />} />
           </Routes>

@@ -40,10 +40,11 @@ const PROJECTS = ['3D', 'AH', 'AT', 'BB', 'Bierce', 'BR', 'Cubi', 'CB', 'CP 360 
 const TYPES = ['Amend', 'New Order']
 const API = import.meta.env.VITE_API_BASE_URL
 const NAVS = [
+  { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
   { id: 'current', label: 'Current Queue', icon: IC.bolt },
   { id: 'issue', label: 'Emailed / Issue', icon: IC.mail },
   { id: 'done', label: 'Done Queries', icon: IC.check },
-  { id: 'reports', label: 'Reports', icon: IC.chart },
+  { id: 'reports', label: 'Legacy Reports', icon: IC.chart },
   { id: 'profile', label: 'Profile', icon: IC.user },
 ]
 
@@ -84,7 +85,7 @@ function parseDurH(s) {
 }
 function initUserStats(byUser, name) {
   if (!byUser[name]) byUser[name] = {
-    name, total: 0, enteredTotal: 0, completedTotal: 0, newOrd: 0, amend: 0, orders: [],
+    name, total: 0, enteredTotal: 0, completedTotal: 0, newOrd: 0, amend: 0, pending: 0, orders: [],
     depts: {}, projects: {}, types: {},
     reply_5: 0, reply_15: 0, reply_30: 0, reply_over30: 0, reply_na: 0,
     done_45m: 0, done_2h: 0, done_6h: 0, done_8h: 0, done_12h: 0, done_over12: 0,
@@ -238,6 +239,46 @@ function buildReport(orders, completedByNames) {
     initUserStats(byUser, completer)
     byUser[completer].completedTotal++
   })
+  return byUser
+}
+
+function buildReportWithPending(orders, completedByNames) {
+  const byUser = {}
+
+  orders.forEach(o => {
+    let enterer = (o.qname || '').trim()
+    if (!enterer) enterer = 'Unassigned'
+    else if (completedByNames && completedByNames.length) {
+      const match = completedByNames.find(c => c.values && c.values.includes(enterer))
+      if (match) enterer = match.display
+    }
+
+    let completer = (o.completed_by || '').trim()
+    if (!completer) completer = 'Unassigned'
+
+    const isSlack = (o.communication_medium === 'Slack' || (o.qname || '').toLowerCase().includes('slack'))
+    const completionOwner = isSlack ? completer : enterer
+    const firstOwner = enterer
+
+    initUserStats(byUser, completionOwner)
+    initUserStats(byUser, enterer)
+    initUserStats(byUser, completer)
+
+    const isDone = o.query_done || (o.status && o.status.toLowerCase() === 'completed')
+
+    if (isDone) {
+      classifyOrder(o, byUser, firstOwner, completionOwner)
+      if (!isSlack) byUser[enterer].enteredTotal++
+      byUser[completer].completedTotal++
+    } else {
+      if (completer !== 'Unassigned') {
+        byUser[completer].pending++
+      } else {
+        byUser[enterer].pending++
+      }
+    }
+  })
+  
   return byUser
 }
 
@@ -516,8 +557,8 @@ const NAV_GROUPS = [
     { id: 'done', label: 'Done Queries', icon: IC.check },
   ]},
   { label: 'Analytics', items: [
-    { id: 'reports', label: 'Reports', icon: IC.chart },
-    { id: 'qms_dashboard', label: 'QMS Dashboard', icon: IC.chart }
+    { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
+    { id: 'reports', label: 'Legacy Reports', icon: IC.chart }
   ] },
   { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: IC.user }] },
 ]
@@ -579,7 +620,7 @@ export default function CSRPortal() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [user, setUser] = useState(null)
-  const [section, setSection] = useState('current')
+  const [section, setSection] = useState('qms_dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -590,10 +631,13 @@ export default function CSRPortal() {
 
   const [reportFrom, setReportFrom] = useState('')
   const [reportTo, setReportTo] = useState('')
+  const [dashFrom, setDashFrom] = useState('')
+  const [dashTo, setDashTo] = useState('')
   const [reportCsr, setReportCsr] = useState('')
   const [drillUser, setDrillUser] = useState(null)
   const [timelineOrder, setTimelineOrder] = useState(null)
   const [slackThreadOrder, setSlackThreadOrder] = useState(null)
+  const [expandedCsr, setExpandedCsr] = useState(null)
   const searchRef = useRef(null)
 
   const [open, setOpen] = useState(false)
@@ -710,6 +754,13 @@ export default function CSRPortal() {
     enabled: !!user, refetchInterval: 10000,
   })
 
+  const dashQ = (dashFrom || dashTo) ? `?from_date=${encodeURIComponent(dashFrom)}&to_date=${encodeURIComponent(dashTo)}` : ''
+  const dashQuery = useQuery({
+    queryKey: ['dashOrders', dashFrom, dashTo],
+    queryFn: () => fetch(`${API}/get-orders.php${dashQ}`).then(r => r.json()),
+    enabled: !!user && section === 'qms_dashboard', refetchInterval: 10000,
+  })
+
   const { data: completedByNames = [] } = useQuery({
     queryKey: ['completedByNames'],
     queryFn: () => fetch(`${API}/get-completed-by-names.php`).then(r => r.json()),
@@ -721,6 +772,20 @@ export default function CSRPortal() {
   const issOrds = Array.isArray(issueQuery.data) ? issueQuery.data : []
   const doneOrds = Array.isArray(doneQuery.data) ? doneQuery.data : []
   const loading = !statsQuery.data && statsQuery.isLoading
+
+  const dashOrdersData = Array.isArray(dashQuery.data) ? dashQuery.data : []
+  const dashReport = useMemo(() => buildReportWithPending(dashOrdersData, completedByNames), [dashOrdersData, completedByNames])
+  const dashSorted = useMemo(() => Object.values(dashReport).sort((a, b) => b.completedTotal - a.completedTotal), [dashReport])
+  const dashAgg = useMemo(() => {
+    let totComp = 0, totPend = 0, totNew = 0, totAmend = 0
+    dashSorted.forEach(u => {
+      totComp += u.completedTotal
+      totPend += u.pending
+      totNew += u.newOrd
+      totAmend += u.amend
+    })
+    return { totComp, totPend, totNew, totAmend }
+  }, [dashSorted])
 
   const list = section === 'current' ? curOrds : section === 'issue' ? issOrds : doneOrds
   const filtered = useMemo(() => {
@@ -955,11 +1020,7 @@ export default function CSRPortal() {
                 const badge = sectionBadge(n.id)
                 return (
                   <button key={n.id} onClick={() => { 
-                      if (n.id === 'qms_dashboard') {
-                        navigate('/dashboard');
-                      } else {
-                        setSection(n.id); setMobileMenuOpen(false); setPage(1); setSearch('');
-                      }
+                      setSection(n.id); setMobileMenuOpen(false); setPage(1); setSearch('');
                     }}
                     className={`sb-link${section === n.id ? ' active' : ''}`}>
                     <Icon paths={n.icon} size={14} style={{ color: section === n.id ? 'var(--accent-primary)' : 'var(--text-faint)' }} />
@@ -1004,6 +1065,147 @@ export default function CSRPortal() {
         </header>
 
         <main className="content">
+          {section === 'qms_dashboard' && (
+            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '16px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <div>
+                    <label className="lbl" style={{ marginBottom: 4 }}>Date From</label>
+                    <input type="date" value={dashFrom} onChange={e => setDashFrom(e.target.value)} className="inp" style={{ background: 'var(--bg-base)' }} />
+                  </div>
+                  <div>
+                    <label className="lbl" style={{ marginBottom: 4 }}>Date To</label>
+                    <input type="date" value={dashTo} onChange={e => setDashTo(e.target.value)} className="inp" style={{ background: 'var(--bg-base)' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+                     {(dashFrom || dashTo) && <button onClick={() => { setDashFrom(''); setDashTo('') }} className="btn btn-ghost btn-sm" style={{ height: 38 }}>Reset Dates</button>}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>Performance Dashboard</h2>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Real-time metrics</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                {[
+                  { l: 'Total Completed', v: dashAgg.totComp, c: 'm-teal', i: IC.check },
+                  { l: 'Total Pending', v: dashAgg.totPend, c: 'm-amber', i: IC.bolt },
+                  { l: 'Total New', v: dashAgg.totNew, c: 'm-blue', i: IC.chart },
+                  { l: 'Total Amends', v: dashAgg.totAmend, c: 'm-green', i: IC.mail }
+                ].map((s, i) => (
+                  <div key={i} className={`metric ${s.c}`} style={{ padding: 24, borderRadius: 'var(--radius-lg)' }}>
+                    <div className="metric-icon" style={{ marginBottom: 12 }}><Icon paths={s.i} size={20} /></div>
+                    <div className="metric-val" style={{ fontSize: 32, marginBottom: 4 }}>{s.v}</div>
+                    <div className="metric-label" style={{ fontSize: 14 }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
+                {dashSorted.map(u => (
+                  <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                    <div 
+                      onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
+                      style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
+                          {u.name[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-main)' }}>{u.name}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{u.enteredTotal} Entered</div>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: 40, flex: 1, justifyContent: 'center' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Done</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pending</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>New</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Amends</div>
+                        </div>
+                      </div>
+
+                      <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
+                        <Icon paths={IC.chevD} size={20} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                      </div>
+                    </div>
+
+                    {expandedCsr === u.name && (
+                      <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border-subtle)', animation: 'fadeIn 0.3s ease' }}>
+                        <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 32 }}>
+                          
+                          <div>
+                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Performance Buckets</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                              {[
+                                { l: '≤45m', v: u.done_45m, c: 'var(--status-success)' },
+                                { l: '≤2h', v: u.done_2h, c: 'var(--status-success)' },
+                                { l: '≤6h', v: u.done_6h, c: 'var(--status-warning)' },
+                                { l: '≤8h', v: u.done_8h, c: 'var(--status-warning)' },
+                                { l: '≤12h', v: u.done_12h, c: 'var(--status-danger)' },
+                                { l: '>12h', v: u.done_over12, c: 'var(--status-danger)' }
+                              ].map(b => (
+                                <div key={b.l} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <span style={{ width: 48, fontSize: 12, color: 'var(--text-muted)' }}>{b.l}</span>
+                                  <div style={{ flex: 1, height: 6, background: 'var(--border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${Math.round((b.v / Math.max(u.completedTotal, 1)) * 100)}%`, background: b.c, borderRadius: 3 }} />
+                                  </div>
+                                  <span style={{ width: 32, fontSize: 12, fontWeight: 600, color: 'var(--text-main)', textAlign: 'right' }}>{b.v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Departments</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {Object.entries(u.depts).sort((a,b) => b[1]-a[1]).slice(0, 6).map(([d,v]) => (
+                                <div key={d} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
+                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{d}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Projects</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {Object.entries(u.projects).sort((a,b) => b[1]-a[1]).slice(0, 6).map(([p,v]) => (
+                                <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
+                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{p}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {dashSorted.length === 0 && (
+                  <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>No data for selected period</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── STAT CARDS ── */}
           {section === 'current' && CARDS.length > 0 && (
             <div className="metrics fade-up">
