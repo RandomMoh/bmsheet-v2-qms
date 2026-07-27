@@ -494,7 +494,7 @@ function ProjectSelect({ selected, onChange, allProjects }) {
   }
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', width: 220, flexShrink: 0 }}>
+    <div ref={wrapRef} style={{ position: 'relative', width: 220, flexShrink: 0, zIndex: open ? 50 : 1 }}>
       <label className="lbl">Projects Filter</label>
       <div 
         className="inp" 
@@ -965,7 +965,7 @@ export default function CSRPortal() {
 
           {/* ── FILTER TOOLBAR ── */}
           {['current', 'issue', 'done'].includes(section) && (
-            <div className="toolbar fade-up">
+            <div className="toolbar fade-up" style={{ position: 'relative', zIndex: 20 }}>
               {section === 'current' && <>
                 <div><label className="lbl">From</label><input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1) }} className="inp" /></div>
                 <div><label className="lbl">To</label><input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1) }} className="inp" /></div>
