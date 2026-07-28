@@ -168,7 +168,7 @@ function parseDurH(s) {
 }
 const getCountryForProject = (proj, dept) => {
   if (!proj || !dept || proj === 'Unknown' || dept === 'Unknown') return '—'
-  for (const [country, items] of Object.entries(PROJECT_MAP)) {
+  for (const [country, items] of Object.entries(COUNTRY_MAP)) {
     if (items.some(i => i.p === proj && i.d === dept)) return country;
   }
   return '—';
@@ -912,7 +912,7 @@ export default function CSRPortal() {
 
   const reportByCountry = useMemo(() => {
     const pStats = {}
-    for (const [country, items] of Object.entries(PROJECT_MAP)) {
+    for (const [country, items] of Object.entries(COUNTRY_MAP)) {
       if (!pStats[country]) pStats[country] = {}
       items.forEach(i => {
         const code = `${i.p} - ${i.d}`
