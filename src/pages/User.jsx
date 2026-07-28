@@ -87,7 +87,7 @@ function parseDurH(s) {
 function initUserStats(byUser, name) {
   if (!byUser[name]) byUser[name] = {
     name, total: 0, enteredTotal: 0, completedTotal: 0, newOrd: 0, amend: 0, pending: 0, orders: [],
-    depts: {}, projects: {}, types: {},
+    depts: {}, projects: {}, types: {}, botCompleted: 0,
     reply_5: 0, reply_15: 0, reply_30: 0, reply_over30: 0, reply_na: 0,
     done_45m: 0, done_2h: 0, done_6h: 0, done_8h: 0, done_12h: 0, done_over12: 0,
   }
@@ -239,6 +239,9 @@ function buildReport(orders, completedByNames) {
     }
     initUserStats(byUser, completer)
     byUser[completer].completedTotal++
+    if (isSlack) {
+      byUser[completer].botCompleted++
+    }
   })
   return byUser
 }
@@ -271,6 +274,7 @@ function buildReportWithPending(orders, completedByNames) {
       classifyOrder(o, byUser, firstOwner, completionOwner)
       if (!isSlack) byUser[enterer].enteredTotal++
       byUser[completer].completedTotal++
+      if (isSlack) byUser[completer].botCompleted++
     } else {
       if (completer !== 'Unassigned') {
         byUser[completer].pending++
@@ -423,8 +427,8 @@ function DrillDown({ u, onClose }) {
               <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Total Credit: {u.total} queries</p>
             </div>
           </div>
-          <div className="stagger-parent" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginTop: 32 }}>
-            {[{ l: 'Entered', v: u.enteredTotal }, { l: 'Completed', v: u.completedTotal }, { l: 'New', v: u.newOrd }, { l: 'Amend', v: u.amend }].map(x => (
+          <div className="stagger-parent" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginTop: 32 }}>
+            {[{ l: 'Entered', v: u.enteredTotal }, { l: 'Completed', v: u.completedTotal }, { l: 'Bot Done', v: u.botCompleted }, { l: 'New', v: u.newOrd }, { l: 'Amend', v: u.amend }].map(x => (
               <div key={x.l} style={{ background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '16px', textAlign: 'center' }}>
                 <p style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px', fontVariantNumeric: 'tabular-nums' }}>{x.v}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>{x.l}</p>
@@ -1113,62 +1117,66 @@ export default function CSRPortal() {
                 <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
                 {dashQuery.isLoading ? (
                   Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200 }}>
-                          <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 160 }}>
+                          <div className="skeleton" style={{ width: 32, height: 32, borderRadius: '50%' }} />
                           <div>
-                            <div className="skeleton" style={{ height: 18, width: 100, marginBottom: 6, borderRadius: 4 }} />
-                            <div className="skeleton" style={{ height: 14, width: 60, borderRadius: 4 }} />
+                            <div className="skeleton" style={{ height: 14, width: 100, marginBottom: 4, borderRadius: 4 }} />
+                            <div className="skeleton" style={{ height: 12, width: 60, borderRadius: 4 }} />
                           </div>
                        </div>
-                       <div style={{ display: 'flex', gap: 40, flex: 1, justifyContent: 'center' }}>
-                         {Array.from({ length: 4 }).map((_, j) => (
+                       <div style={{ display: 'flex', gap: 24, flex: 1, justifyContent: 'center' }}>
+                         {Array.from({ length: 5 }).map((_, j) => (
                            <div key={j} style={{ textAlign: 'center' }}>
-                             <div className="skeleton" style={{ height: 22, width: 28, margin: '0 auto 6px', borderRadius: 4 }} />
-                             <div className="skeleton" style={{ height: 14, width: 40, borderRadius: 4 }} />
+                             <div className="skeleton" style={{ height: 16, width: 24, margin: '0 auto 4px', borderRadius: 4 }} />
+                             <div className="skeleton" style={{ height: 12, width: 32, borderRadius: 4 }} />
                            </div>
                          ))}
                        </div>
-                       <div style={{ width: 40 }}></div>
+                       <div style={{ width: 24 }}></div>
                     </div>
                   ))
                 ) : dashSorted.map(u => (
-                  <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                  <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                     <div 
                       onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
-                      style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
+                      style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200 }}>
-                        <div className="csr-avatar-wrapper" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <UserIcon className="csr-avatar-icon" size={20} strokeWidth={2} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 160 }}>
+                        <div className="csr-avatar-wrapper" style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <UserIcon className="csr-avatar-icon" size={16} strokeWidth={2} />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-main)' }}>{u.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{u.enteredTotal} Entered</div>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-main)' }}>{u.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.enteredTotal} Entered</div>
                         </div>
                       </div>
                       
-                      <div style={{ display: 'flex', gap: 40, flex: 1, justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', gap: 24, flex: 1, justifyContent: 'center' }}>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Done</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Done</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pending</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pending</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>New</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bot Done</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Amends</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>New</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amends</div>
                         </div>
                       </div>
 
-                      <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
-                        <Icon paths={IC.chevD} size={20} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                      <div style={{ width: 24, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
+                        <Icon paths={IC.chevD} size={16} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
                       </div>
                     </div>
 
