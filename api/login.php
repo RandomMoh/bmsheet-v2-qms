@@ -19,9 +19,18 @@ $password = $data->password;
 $role = $data->role;
 
 define('MAINTENANCE_MODE', true);
-$ALLOWED_USERS = ['M/2309'];
+$ALLOWED_USERS = ['M/2309', 'm/2309'];
 
-if (MAINTENANCE_MODE && !in_array($data->username, $ALLOWED_USERS)) {
+$req_user = trim($data->username);
+$is_allowed = false;
+foreach ($ALLOWED_USERS as $u) {
+    if (strcasecmp($req_user, $u) === 0) {
+        $is_allowed = true;
+        break;
+    }
+}
+
+if (MAINTENANCE_MODE && !$is_allowed) {
     echo json_encode(["status" => "error", "message" => "Portal is under scheduled maintenance. Please try again later."]);
     exit();
 }
