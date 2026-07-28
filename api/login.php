@@ -18,8 +18,8 @@ $input_user = mysqli_real_escape_string($conn, $data->username);
 $password = $data->password;
 $role = $data->role;
 
-define('MAINTENANCE_MODE', false);
-$ALLOWED_USERS = ['M', 'Moh'];
+define('MAINTENANCE_MODE', true);
+$ALLOWED_USERS = ['M/2309'];
 
 if (MAINTENANCE_MODE && !in_array($data->username, $ALLOWED_USERS)) {
     echo json_encode(["status" => "error", "message" => "Portal is under scheduled maintenance. Please try again later."]);
