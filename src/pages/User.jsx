@@ -1334,7 +1334,7 @@ export default function CSRPortal() {
                       <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 16px', minWidth: 0 }}>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total Handled</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
@@ -1358,7 +1358,7 @@ export default function CSRPortal() {
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New Orders</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
