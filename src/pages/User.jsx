@@ -1368,14 +1368,55 @@ export default function CSRPortal() {
                           </div>
 
                           <div style={{ gridColumn: 'span 2' }}>
-                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Projects</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px' }}>
-                              {Object.entries(u.projDepts).sort((a,b) => b[1]-a[1]).slice(0, 12).map(([pd,v]) => (
-                                <div key={pd} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
-                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{pd}</span>
-                                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{v}</span>
-                                </div>
-                              ))}
+                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projects Overview</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                              {(() => {
+                                const pStats = {}
+                                u.orders.forEach(o => {
+                                  let c = getCountryForProject(o.project_name, o.department)
+                                  if (c === '—') c = 'Other'
+                                  let code = `${o.project_name} - ${o.department}`
+                                  if (!pStats[c]) pStats[c] = {}
+                                  if (!pStats[c][code]) pStats[c][code] = { count: 0, firstMins: 0, firstCount: 0, lastMins: 0, lastCount: 0 }
+                                  const ps = pStats[c][code]
+                                  ps.count++
+                                  const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+                                  if (fm !== null) { ps.firstMins += fm; ps.firstCount++ }
+                                  const lm = diffMin(o['query-received_datetime'], o.query_done)
+                                  if (lm !== null) { ps.lastMins += lm; ps.lastCount++ }
+                                })
+                                const res = Object.entries(pStats).map(([country, projs]) => ({
+                                  country,
+                                  projects: Object.entries(projs).sort((a,b) => b[1].count - a[1].count)
+                                })).filter(c => c.projects.length > 0)
+                                
+                                if (res.length === 0) return <div style={{ color: 'var(--text-muted)' }}>No projects</div>
+                                return res.map(cStats => (
+                                  <div key={cStats.country}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.05em' }}>{cStats.country}</div>
+                                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                                      <thead>
+                                        <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                          <th style={{ padding: '4px 0', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Project</th>
+                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>Total</th>
+                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>1st Reply</th>
+                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>Last Reply</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {cStats.projects.map(([code, ps]) => (
+                                          <tr key={code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                            <td style={{ padding: '6px 0', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{code}</td>
+                                            <td style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600 }}>{ps.count}</td>
+                                            <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.firstCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.firstCount > 0 ? durStr(ps.firstMins / ps.firstCount) : '—'}</td>
+                                            <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.lastCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.lastCount > 0 ? durStr(ps.lastMins / ps.lastCount) : '—'}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ))
+                              })()}
                             </div>
                           </div>
 
