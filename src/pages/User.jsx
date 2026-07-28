@@ -1117,19 +1117,16 @@ export default function CSRPortal() {
                 <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
                 {dashQuery.isLoading ? (
                   Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 160 }}>
-                          <div className="skeleton" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                          <div>
-                            <div className="skeleton" style={{ height: 14, width: 100, marginBottom: 4, borderRadius: 4 }} />
-                            <div className="skeleton" style={{ height: 12, width: 60, borderRadius: 4 }} />
-                          </div>
+                          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                          <div className="skeleton" style={{ height: 14, width: 100, borderRadius: 4 }} />
                        </div>
-                       <div style={{ display: 'flex', gap: 24, flex: 1, justifyContent: 'center' }}>
-                         {Array.from({ length: 5 }).map((_, j) => (
+                       <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 24px' }}>
+                         {Array.from({ length: 7 }).map((_, j) => (
                            <div key={j} style={{ textAlign: 'center' }}>
-                             <div className="skeleton" style={{ height: 16, width: 24, margin: '0 auto 4px', borderRadius: 4 }} />
-                             <div className="skeleton" style={{ height: 12, width: 32, borderRadius: 4 }} />
+                             <div className="skeleton" style={{ height: 14, width: 20, margin: '0 auto 2px', borderRadius: 4 }} />
+                             <div className="skeleton" style={{ height: 10, width: 28, borderRadius: 4 }} />
                            </div>
                          ))}
                        </div>
@@ -1140,38 +1137,43 @@ export default function CSRPortal() {
                   <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                     <div 
                       onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
-                      style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
+                      style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 160 }}>
-                        <div className="csr-avatar-wrapper" style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <UserIcon className="csr-avatar-icon" size={16} strokeWidth={2} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: 180, flexShrink: 0 }}>
+                        <div className="csr-avatar-wrapper" style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <UserIcon className="csr-avatar-icon" size={14} strokeWidth={2} />
                         </div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-main)' }}>{u.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.enteredTotal} Entered</div>
-                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
                       </div>
                       
-                      <div style={{ display: 'flex', gap: 24, flex: 1, justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 24px', minWidth: 0 }}>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Done</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pending</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Entered</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bot Done</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Done</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>New</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amends</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Done</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Amends</div>
                         </div>
                       </div>
 
