@@ -1373,31 +1373,8 @@ export default function CSRPortal() {
 
                     {expandedCsr === u.name && (
                       <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border-subtle)', animation: 'fadeIn 0.3s ease' }}>
-                        <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 32 }}>
-                          
+                        <div style={{ marginTop: 24 }}>
                           <div>
-                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Performance Buckets</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                              {[
-                                { l: '≤45m', v: u.done_45m, c: 'var(--status-success)' },
-                                { l: '≤2h', v: u.done_2h, c: 'var(--status-success)' },
-                                { l: '≤4h', v: u.done_4h, c: 'var(--status-warning)' },
-                                { l: '≤8h', v: u.done_8h, c: 'var(--status-warning)' },
-                                { l: '≤12h', v: u.done_12h, c: 'var(--status-danger)' },
-                                { l: '>12h', v: u.done_over12, c: 'var(--status-danger)' }
-                              ].map(b => (
-                                <div key={b.l} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <span style={{ width: 48, fontSize: 12, color: 'var(--text-muted)' }}>{b.l}</span>
-                                  <div style={{ flex: 1, height: 6, background: 'var(--border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', width: `${Math.round((b.v / Math.max(u.completedTotal, 1)) * 100)}%`, background: b.c, borderRadius: 3 }} />
-                                  </div>
-                                  <span style={{ width: 32, fontSize: 12, fontWeight: 600, color: 'var(--text-main)', textAlign: 'right' }}>{b.v}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div style={{ gridColumn: 'span 2' }}>
                             <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projects Overview</h4>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
                               {(() => {
