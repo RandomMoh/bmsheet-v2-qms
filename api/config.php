@@ -13,7 +13,7 @@ ini_set('session.save_path', $session_path);
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 100);
 
-session_name('qms_sess_v2');
+session_name('qms_sess_v3');
 session_start();
 
 date_default_timezone_set('Asia/Karachi');

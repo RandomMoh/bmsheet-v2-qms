@@ -36,8 +36,90 @@ const IC = {
 }
 
 const MEDIUMS = ['Slack', 'Skype', 'MS Teams', 'BR Outlook Account', 'Outlook Email Order Account', 'Outlook Email BM Support Account', 'Outlook Email Portal Account', 'Queries Center Gmail', 'HelpScout', 'Focal MP Mailbox', 'TD Support Email', 'Cubi Chat', 'PHOTO BR OUTLOOK MAIL', 'FP BR OUTLOOK MAIL']
+const COUNTRY_MAP = {
+  'UK': [
+    { p: 'Code', d: 'Photo Enhancement' },
+    { p: 'Code', d: 'Floor Plan' },
+    { p: 'Code', d: 'Video Editing' },
+    { p: 'PB', d: 'Floor Plan' },
+    { p: 'Prestige', d: 'Photo Enhancement' },
+    { p: 'Focal MP', d: 'Floor Plan' },
+    { p: 'Focal Video', d: 'Video Editing' },
+    { p: 'HDR', d: 'Photo Enhancement' },
+    { p: 'Single', d: 'Photo Enhancement' },
+    { p: 'Capture', d: 'Photo Enhancement' },
+    { p: 'Simple', d: 'Photo Enhancement' },
+    { p: 'Scan', d: 'Photo Enhancement' },
+    { p: 'BB', d: 'Photo Enhancement' },
+    { p: 'JH', d: 'Photo Enhancement' },
+    { p: 'MA', d: 'Photo Enhancement' },
+    { p: 'AH', d: 'Photo Enhancement' },
+    { p: 'CB', d: 'Photo Enhancement' },
+    { p: 'GF', d: 'Photo Enhancement' },
+    { p: 'BR', d: 'Photo Enhancement' },
+    { p: 'Creative', d: 'Photo Enhancement' },
+    { p: 'HC', d: 'Photo Enhancement' },
+    { p: 'CT', d: 'Photo Enhancement' },
+    { p: 'GP', d: 'Photo Enhancement' },
+    { p: 'ME', d: 'Photo Enhancement' },
+    { p: 'Now', d: 'Photo Enhancement' }
+  ],
+  'Australia': [
+    { p: 'PRO', d: 'Photo Enhancement' },
+    { p: 'PRO', d: 'Virtual Staging' },
+    { p: 'TIFF', d: 'Floor Plan' },
+    { p: 'TIFF', d: 'Virtual Staging' },
+    { p: 'HSA', d: 'Video Editing' },
+    { p: 'HSA', d: 'Virtual Staging' },
+    { p: 'FS', d: 'Photo Enhancement' },
+    { p: 'CK', d: 'Floor Plan' },
+    { p: 'Metro', d: 'Photo Enhancement' },
+    { p: 'Metro', d: 'Floor Plan' },
+    { p: 'REFP', d: 'Floor Plan' },
+    { p: 'SB', d: 'Floor Plan' },
+    { p: 'TQ', d: 'Photo Enhancement' },
+    { p: 'SM', d: 'Photo Enhancement' },
+    { p: 'SKM', d: 'Photo Enhancement' },
+    { p: 'MD', d: 'Photo Enhancement' },
+    { p: 'JL', d: 'Photo Enhancement' },
+    { p: 'Mi', d: 'Photo Enhancement' },
+    { p: 'xactimate', d: 'Photo Enhancement' },
+    { p: 'roomio', d: 'Photo Enhancement' },
+    { p: 'schematic', d: 'Photo Enhancement' },
+    { p: 'Faro', d: 'Photo Enhancement' }
+  ],
+  'South Africa': [
+    { p: 'SA', d: 'Photo Enhancement' },
+    { p: 'SA', d: 'Floor Plan' },
+    { p: 'SA', d: 'Video Editing' },
+    { p: 'FF', d: 'Floor Plan' }
+  ],
+  'Canada/Other (USA)': [
+    { p: 'HM', d: 'Photo Enhancement' },
+    { p: 'HM', d: 'Floor Plan' },
+    { p: 'HM', d: 'Video Editing' },
+    { p: 'Open House', d: 'Photo Enhancement' },
+    { p: 'Open House', d: 'Floor Plan' },
+    { p: 'PM', d: 'Video Editing' },
+    { p: 'PM', d: 'Floor Plan' },
+    { p: 'WIN', d: 'Floor Plan' },
+    { p: 'Nat3D', d: 'Floor Plan' }
+  ],
+  'EU (Vietnam)': [
+    { p: 'Cubi', d: 'Photo Enhancement' },
+    { p: 'Cubi', d: 'Floor Plan', label: 'Cubi - 2D Floor Plan' },
+    { p: 'Cubi', d: '3D Floor Plan' },
+    { p: 'Esoft', d: 'Photo Enhancement' },
+    { p: 'Esoft', d: 'Floor Plan', label: 'Esoft - 2D Floor Plan' },
+    { p: 'Esoft', d: '3D Floor Plan' },
+    { p: 'Esoft', d: 'Video Editing' }
+  ]
+};
+
+const COUNTRIES = Object.keys(COUNTRY_MAP);
+const ALL_PROJECTS = [...new Set(Object.values(COUNTRY_MAP).flatMap(c => c.map(i => i.p)))];
 const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editing', 'Virtual Staging']
-const PROJECTS = ['3D', 'AH', 'AT', 'BB', 'Bierce', 'BR', 'Cubi', 'CB', 'CP 360 FP', 'CK', 'Capture', 'Code', 'Focal', 'Focal MP', 'Focal PB', 'Focal UI', 'Focal CAD', 'FNC', 'FS', 'GP', 'GF', 'HC', 'HSA', 'HM', 'HS', 'JH', 'JV', 'JL', 'MA', 'MD', 'ME', 'Metro', 'Mi', 'OH', 'Open House', 'PM', 'PRO', 'REM', 'Schematic', 'SA', 'Scan', 'Simple', 'Single', 'SKM', 'SM', 'TIFF', 'TQ', 'VG', 'WIN', 'Xactimate', 'ZFP', 'Roomio', 'Faro', 'FF', 'REFP']
+const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
 const API = import.meta.env.VITE_API_BASE_URL
 const NAVS = [
@@ -84,12 +166,19 @@ function parseDurH(s) {
   if (s.includes('h')) { const [hr] = s.split('h'); h += parseInt(hr) }
   return h
 }
+const getCountryForProject = (proj, dept) => {
+  if (!proj || !dept || proj === 'Unknown' || dept === 'Unknown') return '—'
+  for (const [country, items] of Object.entries(PROJECT_MAP)) {
+    if (items.some(i => i.p === proj && i.d === dept)) return country;
+  }
+  return '—';
+}
 function initUserStats(byUser, name) {
   if (!byUser[name]) byUser[name] = {
     name, total: 0, enteredTotal: 0, completedTotal: 0, newOrd: 0, amend: 0, pending: 0, orders: [],
-    depts: {}, projects: {}, types: {}, botCompleted: 0,
-    reply_5: 0, reply_15: 0, reply_30: 0, reply_over30: 0, reply_na: 0,
-    done_45m: 0, done_2h: 0, done_6h: 0, done_8h: 0, done_12h: 0, done_over12: 0,
+    projDepts: {}, types: {}, botCompleted: 0, botAssigned: 0,
+    reply_5: 0, reply_15: 0, reply_30: 0, reply_1h: 0, reply_over1h: 0, reply_na: 0,
+    done_45m: 0, done_2h: 0, done_4h: 0, done_8h: 0, done_12h: 0, done_over12: 0,
   }
 }
 
@@ -105,15 +194,15 @@ function classifyOrder(o, byUser, firstOwner, completionOwner) {
   const dept = o.department || 'Unknown'
   const proj = o.project_name || 'Unknown'
   const tp = o.type || 'Unknown'
-  cU.depts[dept] = (cU.depts[dept] || 0) + 1
-  cU.projects[proj] = (cU.projects[proj] || 0) + 1
+  const pd = `${proj} - ${dept}`
+  cU.projDepts[pd] = (cU.projDepts[pd] || 0) + 1
   cU.types[tp] = (cU.types[tp] || 0) + 1
 
   const dm = diffMin(o['query-received_datetime'], o.query_done)
   if (dm !== null) {
     if (dm <= 45) cU.done_45m++
     else if (dm <= 120) cU.done_2h++
-    else if (dm <= 360) cU.done_6h++
+    else if (dm <= 240) cU.done_4h++
     else if (dm <= 480) cU.done_8h++
     else if (dm <= 720) cU.done_12h++
     else cU.done_over12++
@@ -127,7 +216,8 @@ function classifyOrder(o, byUser, firstOwner, completionOwner) {
   else if (rm <= 5) fU.reply_5++
   else if (rm <= 15) fU.reply_15++
   else if (rm <= 30) fU.reply_30++
-  else fU.reply_over30++
+  else if (rm <= 60) fU.reply_1h++
+  else fU.reply_over1h++
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL
@@ -241,6 +331,7 @@ function buildReport(orders, completedByNames) {
     byUser[completer].completedTotal++
     if (isSlack) {
       byUser[completer].botCompleted++
+      byUser[completer].botAssigned++
     }
   })
   return byUser
@@ -274,10 +365,14 @@ function buildReportWithPending(orders, completedByNames) {
       classifyOrder(o, byUser, firstOwner, completionOwner)
       if (!isSlack) byUser[enterer].enteredTotal++
       byUser[completer].completedTotal++
-      if (isSlack) byUser[completer].botCompleted++
+      if (isSlack) {
+        byUser[completer].botCompleted++
+        byUser[completer].botAssigned++
+      }
     } else {
       if (completer !== 'Unassigned') {
         byUser[completer].pending++
+        if (isSlack) byUser[completer].botAssigned++
       } else {
         byUser[enterer].pending++
       }
@@ -383,19 +478,19 @@ function DrillDown({ u, onClose }) {
     { l: '≤5m', v: u.reply_5, good: true },
     { l: '5-15m', v: u.reply_15, good: true },
     { l: '15-30m', v: u.reply_30, good: false },
-    { l: '>30m', v: u.reply_over30, good: false, bad: true },
+    { l: '30m-1h', v: u.reply_1h, good: false },
+    { l: '>1h', v: u.reply_over1h, good: false, bad: true },
     { l: 'N/A', v: u.reply_na, neutral: true },
   ]
   const doneBuckets = [
     { l: '≤45m', v: u.done_45m, good: true },
     { l: '≤2h', v: u.done_2h, good: true },
-    { l: '≤6h', v: u.done_6h, good: false },
+    { l: '≤4h', v: u.done_4h, good: false },
     { l: '≤8h', v: u.done_8h, good: false },
     { l: '≤12h', v: u.done_12h, good: false },
     { l: '>12h', v: u.done_over12, bad: true },
   ]
-  const topDepts = Object.entries(u.depts).sort((a, b) => b[1] - a[1]).slice(0, 5)
-  const topProjs = Object.entries(u.projects).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const topProjDepts = Object.entries(u.projDepts).sort((a, b) => b[1] - a[1]).slice(0, 10)
   const typeEntries = Object.entries(u.types).sort((a, b) => b[1] - a[1])
   const initials = u.name[0]?.toUpperCase() || '?'
   const bar = (v, max, color) => (
@@ -472,24 +567,17 @@ function DrillDown({ u, onClose }) {
               ))}
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            <div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: 'var(--text-main)' }}>Departments</h3>
-              {topDepts.map(([d, v]) => (
-                <div key={d} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 12 }}>{d}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', flexShrink: 0 }}>{v}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
             <div>
               <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: 'var(--text-main)' }}>Top Projects</h3>
-              {topProjs.map(([p, v]) => (
-                <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 12 }}>{p}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', flexShrink: 0 }}>{v}</span>
-                </div>
-              ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+                {topProjDepts.map(([pd, v]) => (
+                  <div key={pd} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 12 }}>{pd}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', flexShrink: 0 }}>{v}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div>
@@ -648,7 +736,7 @@ export default function CSRPortal() {
   const searchRef = useRef(null)
 
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ medium: MEDIUMS[0], project: PROJECTS[0], department: DEPTS[0], type: TYPES[0], order_id: '' })
+  const [form, setForm] = useState({ medium: MEDIUMS[0], country: COUNTRIES[0], project: COUNTRY_MAP[COUNTRIES[0]][0].p, department: COUNTRY_MAP[COUNTRIES[0]][0].d, type: TYPES[0], order_id: '' })
   const [dlH, setDlH] = useState('12')
   const [dlMin, setDlMin] = useState('00')
   const [dlAp, setDlAp] = useState('PM')
@@ -822,6 +910,49 @@ export default function CSRPortal() {
   const reportByUser = useMemo(() => buildReport(reportOrders, completedByNames), [reportOrders, completedByNames])
   const sorted = useMemo(() => Object.values(reportByUser).sort((a, b) => b.total - a.total), [reportByUser])
 
+  const reportByCountry = useMemo(() => {
+    const pStats = {}
+    for (const [country, items] of Object.entries(PROJECT_MAP)) {
+      if (!pStats[country]) pStats[country] = {}
+      items.forEach(i => {
+        const code = `${i.p} - ${i.d}`
+        pStats[country][code] = {
+          country, code, 
+          total: 0,
+          firstReplyTotalMins: 0, firstReplyCount: 0,
+          lastReplyTotalMins: 0, lastReplyCount: 0
+        }
+      })
+    }
+    reportOrders.forEach(o => {
+      let c = getCountryForProject(o.project_name, o.department)
+      if (c === '—') c = 'Other'
+      let code = `${o.project_name} - ${o.department}`
+      
+      if (!pStats[c]) pStats[c] = {}
+      if (!pStats[c][code]) pStats[c][code] = { country: c, code, total: 0, firstReplyTotalMins: 0, firstReplyCount: 0, lastReplyTotalMins: 0, lastReplyCount: 0 }
+      
+      const ps = pStats[c][code]
+      ps.total++
+
+      const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+      if (fm !== null) {
+        ps.firstReplyTotalMins += fm
+        ps.firstReplyCount++
+      }
+
+      const lm = diffMin(o['query-received_datetime'], o.query_done)
+      if (lm !== null) {
+        ps.lastReplyTotalMins += lm
+        ps.lastReplyCount++
+      }
+    })
+    return Object.entries(pStats).map(([country, projs]) => ({
+      country,
+      projects: Object.values(projs).filter(p => p.total > 0).sort((a, b) => b.total - a.total)
+    })).filter(c => c.projects.length > 0)
+  }, [reportOrders])
+
   const exportReportPDF = async () => {
     const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
     const doc = new jsPDF('l')
@@ -830,16 +961,40 @@ export default function CSRPortal() {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 116, 139)
     const range = reportFrom || reportTo ? `${reportFrom || 'Start'} — ${reportTo || 'End'}` : 'All Time'
     doc.text(`Period: ${range}  |  Generated: ${new Date().toLocaleString()}  |  ${reportOrders.length} completed queries`, 14, 28)
-    const rows = sorted.map(u => [u.name, u.total, u.newOrd, u.amend, u.reply_5, u.reply_15, u.reply_30, u.reply_over30, u.reply_na, u.done_45m, u.done_2h, u.done_6h, u.done_8h, u.done_12h, u.done_over12])
+    const rows = sorted.map(u => [u.name, u.total, u.newOrd, u.amend, u.reply_5, u.reply_15, u.reply_30, u.reply_1h, u.reply_over1h, u.reply_na, u.done_45m, u.done_2h, u.done_4h, u.done_8h, u.done_12h, u.done_over12])
     autoTable(doc, {
       startY: 34, theme: 'grid',
-      head: [['User', 'Total', 'New', 'Amend', 'Reply ≤5m', '5-15m', '15-30m', '>30m', 'N/A', 'Done ≤45m', '≤2h', '≤6h', '≤8h', '≤12h', '>12h']],
+      head: [['User', 'Total', 'New', 'Amend', 'Reply ≤5m', '5-15m', '15-30m', '30m-1h', '>1h', 'N/A', 'Done ≤45m', '≤2h', '≤4h', '≤8h', '≤12h', '>12h']],
       body: rows,
       headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 7, fontStyle: 'bold', halign: 'center' },
       bodyStyles: { fontSize: 8, halign: 'center' },
       columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       styles: { cellPadding: 3, overflow: 'ellipsize' },
+    })
+
+    reportByCountry.forEach(cStats => {
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 14,
+        theme: 'grid',
+        head: [[`${cStats.country} - Projects`, 'Total Queries', 'Avg 1st Reply', 'Avg Last Reply']],
+        body: cStats.projects.map(p => [
+          p.code,
+          p.total,
+          p.firstReplyCount > 0 ? durStr(p.firstReplyTotalMins / p.firstReplyCount) : '—',
+          p.lastReplyCount > 0 ? durStr(p.lastReplyTotalMins / p.lastReplyCount) : '—'
+        ]),
+        headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 8 },
+        columnStyles: { 
+          0: { fontStyle: 'bold' },
+          1: { halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'center' }
+        },
+        alternateRowStyles: { fillColor: [251, 252, 253] },
+        styles: { cellPadding: 4 }
+      })
     })
     doc.setFontSize(7); doc.setTextColor(148, 163, 184)
     doc.text('QMS © Benchmark Studio — Confidential', 14, doc.internal.pageSize.height - 8)
@@ -855,7 +1010,7 @@ export default function CSRPortal() {
   const openNew = () => {
     const d = defaultPKTDL()
     setDlH(d.h); setDlMin(d.min); setDlAp(d.ap); setDlMode('4')
-    setForm({ medium: MEDIUMS[0], project: PROJECTS[0], department: DEPTS[0], type: TYPES[0], order_id: '' })
+    setForm({ medium: MEDIUMS[0], country: COUNTRIES[0], project: COUNTRY_MAP[COUNTRIES[0]][0].p, department: COUNTRY_MAP[COUNTRIES[0]][0].d, type: TYPES[0], order_id: '' })
     setRecvTime(''); setFirstReplyTime('')
     setFb(null); setOpen(true)
   }
@@ -1113,7 +1268,7 @@ export default function CSRPortal() {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
                 {dashQuery.isLoading ? (
                   Array.from({ length: 6 }).map((_, i) => (
@@ -1137,48 +1292,52 @@ export default function CSRPortal() {
                   <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                     <div 
                       onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
-                      style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
+                      style={{ padding: '4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: 180, flexShrink: 0 }}>
-                        <div className="csr-avatar-wrapper" style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <UserIcon className="csr-avatar-icon" size={14} strokeWidth={2} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 160, flexShrink: 0 }}>
+                        <div className="csr-avatar-wrapper" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <UserIcon className="csr-avatar-icon" size={12} strokeWidth={2} />
                         </div>
                         <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
                       </div>
                       
-                      <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 24px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 16px', minWidth: 0 }}>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Entered</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Done</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botAssigned}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Entered</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Done</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Amends</div>
                         </div>
                       </div>
 
                       <div style={{ width: 24, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
-                        <Icon paths={IC.chevD} size={16} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                        <Icon paths={IC.chevD} size={14} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
                       </div>
                     </div>
 
@@ -1192,7 +1351,7 @@ export default function CSRPortal() {
                               {[
                                 { l: '≤45m', v: u.done_45m, c: 'var(--status-success)' },
                                 { l: '≤2h', v: u.done_2h, c: 'var(--status-success)' },
-                                { l: '≤6h', v: u.done_6h, c: 'var(--status-warning)' },
+                                { l: '≤4h', v: u.done_4h, c: 'var(--status-warning)' },
                                 { l: '≤8h', v: u.done_8h, c: 'var(--status-warning)' },
                                 { l: '≤12h', v: u.done_12h, c: 'var(--status-danger)' },
                                 { l: '>12h', v: u.done_over12, c: 'var(--status-danger)' }
@@ -1208,24 +1367,12 @@ export default function CSRPortal() {
                             </div>
                           </div>
 
-                          <div>
-                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Departments</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {Object.entries(u.depts).sort((a,b) => b[1]-a[1]).slice(0, 6).map(([d,v]) => (
-                                <div key={d} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
-                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{d}</span>
-                                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{v}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
+                          <div style={{ gridColumn: 'span 2' }}>
                             <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Projects</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {Object.entries(u.projects).sort((a,b) => b[1]-a[1]).slice(0, 6).map(([p,v]) => (
-                                <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
-                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{p}</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px' }}>
+                              {Object.entries(u.projDepts).sort((a,b) => b[1]-a[1]).slice(0, 12).map(([pd,v]) => (
+                                <div key={pd} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: 13 }}>
+                                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{pd}</span>
                                   <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{v}</span>
                                 </div>
                               ))}
@@ -1292,9 +1439,9 @@ export default function CSRPortal() {
                 <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
                   <table className="tbl">
                     <thead><tr>
-                      {section === 'current' && ['Received','Age','Medium','Project','Dept','Type','Order ID','Deadline','1st Reply','Entered By'].map(h => <th key={h}>{h}</th>)}
-                      {section === 'issue' && ['Received','Age','Medium','Project','Dept','Type','Order ID','Entered By','Issue / Notes'].map(h => <th key={h}>{h}</th>)}
-                      {section === 'done' && ['Received','Medium','Project','Dept','Type','Order ID','1st Reply','Entered By','Done At','Completed By','Duration','Since Done','History'].map(h => <th key={h}>{h}</th>)}
+                      {section === 'current' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Deadline','1st Reply','Entered By'].map(h => <th key={h}>{h}</th>)}
+                      {section === 'issue' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Entered By','Issue / Notes'].map(h => <th key={h}>{h}</th>)}
+                      {section === 'done' && ['Received','Medium','Country','Project Code','Type','Order ID','1st Reply','Last Reply','Entered By','Completed By','Duration','History'].map(h => <th key={h}>{h}</th>)}
                       <th style={{ width: 60 }}></th>
                     </tr></thead>
                     <tbody className="stagger">
@@ -1309,8 +1456,12 @@ export default function CSRPortal() {
                               <td>{fmtDt(o['query-received_datetime'])}</td>
                               <td><span className={`pill ${overdue ? 'pill-danger' : 'pill-neutral'}`}>{age}</span></td>
                               <td>{isUnassigned(o.communication_medium) ? <FieldSelect order={o} field="communication_medium" options={MEDIUMS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.communication_medium}</td>
-                              <td className="cell-bold">{isUnassigned(o.project_name) ? <FieldSelect order={o} field="project_name" options={PROJECTS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.project_name}</td>
-                              <td>{isUnassigned(o.department) ? <FieldSelect order={o} field="department" options={DEPTS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.department}</td>
+                              <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
+                              <td className="cell-bold">
+                                {isUnassigned(o.project_name) ? <FieldSelect order={o} field="project_name" options={PROJECTS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.project_name}
+                                {' - '}
+                                {isUnassigned(o.department) ? <FieldSelect order={o} field="department" options={DEPTS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.department}
+                              </td>
                               <td>{isUnassigned(o.type) ? <FieldSelect order={o} field="type" options={TYPES} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.type}</td>
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
                               <td style={{ color: overdue ? 'var(--status-danger)' : 'var(--text-muted)', fontWeight: overdue ? 600 : 400 }}><Countdown deadline={o._deadline} /></td>
@@ -1333,8 +1484,8 @@ export default function CSRPortal() {
                               <td>{fmtDt(o['query-received_datetime'])}</td>
                               <td><span className="pill pill-warning">{elapsedStr(o['query-received_datetime'])}</span></td>
                               <td>{o.communication_medium}</td>
-                              <td className="cell-bold">{o.project_name}</td>
-                              <td>{o.department}</td>
+                              <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
+                              <td className="cell-bold">{o.project_name} - {o.department}</td>
                               <td>{o.type}</td>
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
                               <td>{o.qname}</td>
@@ -1350,16 +1501,15 @@ export default function CSRPortal() {
                             <tr key={o.id}>
                               <td>{fmtDt(o['query-received_datetime'])}</td>
                               <td>{o.communication_medium}</td>
-                              <td className="cell-bold">{o.project_name}</td>
-                              <td>{o.department}</td>
+                              <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
+                              <td className="cell-bold">{o.project_name} - {o.department}</td>
                               <td>{o.type}</td>
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
                               <td>{fmtDt(o['query-first-reply_datetime'])}</td>
-                              <td>{o.qname}</td>
                               <td>{fmtDt(o.query_done)}</td>
+                              <td>{o.qname}</td>
                               <td className="cell-good">{o.completed_by || '—'}</td>
                               <td><span className={`pill ${bad ? 'pill-danger' : 'pill-neutral'}`}>{dur}</span></td>
-                              <td className="cell-muted" style={{ fontSize: 12 }}>{o.query_done ? elapsedStr(o.query_done) + ' ago' : '—'}</td>
                               <td style={{ textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
                                 <button onClick={() => setTimelineOrder(o)} title="View Query Timeline"
                                   style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: 'var(--accent-primary)', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
@@ -1424,22 +1574,23 @@ export default function CSRPortal() {
                     <td style={{ textAlign: 'center' }}><Icon paths={IC.arrowR} size={12} /></td>
                   </tr>
                 )},
-                { title: 'First Reply Distribution', cols: ['User','≤5m','5-15m','15-30m','>30m','N/A'], render: u => (
+                { title: 'First Reply Distribution', cols: ['User','≤5m','5-15m','15-30m','30m-1h','>1h','N/A'], render: u => (
                   <tr key={u.name} style={{ cursor: 'pointer' }} onClick={() => setDrillUser(u)}>
                     <td className="cell-bold">{u.name}</td>
                     <td style={{ textAlign: 'center' }} className="cell-good">{u.reply_5}</td>
                     <td style={{ textAlign: 'center' }} className="cell-good">{u.reply_15}</td>
                     <td style={{ textAlign: 'center' }} className="cell-muted">{u.reply_30}</td>
-                    <td style={{ textAlign: 'center' }} className={u.reply_over30 > 0 ? 'cell-bad' : 'cell-muted'}>{u.reply_over30}</td>
+                    <td style={{ textAlign: 'center' }} className="cell-muted">{u.reply_1h}</td>
+                    <td style={{ textAlign: 'center' }} className={u.reply_over1h > 0 ? 'cell-bad' : 'cell-muted'}>{u.reply_over1h}</td>
                     <td style={{ textAlign: 'center' }} className="cell-muted">{u.reply_na}</td>
                   </tr>
                 )},
-                { title: 'Completion Time Distribution', cols: ['User','≤45m','≤2h','≤6h','≤8h','≤12h','>12h'], render: u => (
+                { title: 'Completion Time Distribution', cols: ['User','≤45m','≤2h','≤4h','≤8h','≤12h','>12h'], render: u => (
                   <tr key={u.name} style={{ cursor: 'pointer' }} onClick={() => setDrillUser(u)}>
                     <td className="cell-bold">{u.name}</td>
                     <td style={{ textAlign: 'center' }} className="cell-good">{u.done_45m}</td>
                     <td style={{ textAlign: 'center' }} className="cell-good">{u.done_2h}</td>
-                    <td style={{ textAlign: 'center' }} className="cell-muted">{u.done_6h}</td>
+                    <td style={{ textAlign: 'center' }} className="cell-muted">{u.done_4h}</td>
                     <td style={{ textAlign: 'center' }} className="cell-muted">{u.done_8h}</td>
                     <td style={{ textAlign: 'center' }} className="cell-muted">{u.done_12h}</td>
                     <td style={{ textAlign: 'center' }} className={u.done_over12 > 0 ? 'cell-bad' : 'cell-muted'}>{u.done_over12}</td>
@@ -1452,6 +1603,39 @@ export default function CSRPortal() {
                     <table className="tbl">
                       <thead><tr>{t.cols.map((h, i) => <th key={i} style={{ textAlign: i > 0 ? 'center' : 'left' }}>{h}</th>)}</tr></thead>
                       <tbody>{sorted.length === 0 ? <tr><td colSpan={t.cols.length} style={{ textAlign: 'center', padding: 48, color: 'var(--text-faint)' }}>No data.</td></tr> : sorted.map(t.render)}</tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+              
+              {/* ── COUNTRY PROJECT REPORTS ── */}
+              {reportByCountry.map(cStats => (
+                <div className="panel fade-up" key={`country-${cStats.country}`}>
+                  <div className="panel-head"><h3>{cStats.country} Projects</h3></div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="tbl">
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left' }}>Project Code</th>
+                          <th style={{ textAlign: 'center' }}>Total Queries</th>
+                          <th style={{ textAlign: 'center' }}>Avg 1st Reply</th>
+                          <th style={{ textAlign: 'center' }}>Avg Last Reply</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cStats.projects.length === 0 ? <tr><td colSpan={4} style={{ textAlign: 'center', padding: 48, color: 'var(--text-faint)' }}>No data.</td></tr> : cStats.projects.map(p => (
+                          <tr key={p.code}>
+                            <td className="cell-bold">{p.code}</td>
+                            <td style={{ textAlign: 'center', fontWeight: 600 }}>{p.total}</td>
+                            <td style={{ textAlign: 'center' }} className={p.firstReplyCount > 0 ? 'cell-good' : 'cell-muted'}>
+                              {p.firstReplyCount > 0 ? durStr(p.firstReplyTotalMins / p.firstReplyCount) : '—'}
+                            </td>
+                            <td style={{ textAlign: 'center' }} className={p.lastReplyCount > 0 ? 'cell-good' : 'cell-muted'}>
+                              {p.lastReplyCount > 0 ? durStr(p.lastReplyTotalMins / p.lastReplyCount) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
                     </table>
                   </div>
                 </div>
@@ -1483,16 +1667,29 @@ export default function CSRPortal() {
               <button className="dialog-close" onClick={() => !busy && setOpen(false)}><Icon paths={IC.close} size={16} /></button>
             </div>
             <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {[
-                { l: 'Communication Medium', k: 'medium', opts: MEDIUMS },
-                { l: 'Project Name', k: 'project', opts: PROJECTS },
-                { l: 'Department', k: 'department', opts: DEPTS },
-                { l: 'Type', k: 'type', opts: TYPES },
-              ].map(f => (
-                <div key={f.k}><label className="lbl">{f.l}</label>
-                  <select name={f.k} value={form[f.k]} onChange={fc} className="inp">{f.opts.map(v => <option key={v} value={v}>{v}</option>)}</select>
-                </div>
-              ))}
+              <div><label className="lbl">Communication Medium</label>
+                <select name="medium" value={form.medium} onChange={fc} className="inp">{MEDIUMS.map(v => <option key={v} value={v}>{v}</option>)}</select>
+              </div>
+              <div><label className="lbl">Country</label>
+                <select name="country" value={form.country} onChange={(e) => {
+                  const c = e.target.value;
+                  const first = COUNTRY_MAP[c][0];
+                  setForm(p => ({ ...p, country: c, project: first.p, department: first.d }));
+                }} className="inp">{COUNTRIES.map(v => <option key={v} value={v}>{v}</option>)}</select>
+              </div>
+              <div><label className="lbl">Project & Department</label>
+                <select value={`${form.project}|${form.department}`} onChange={(e) => {
+                  const [p, d] = e.target.value.split('|');
+                  setForm(prev => ({ ...prev, project: p, department: d }));
+                }} className="inp">
+                  {COUNTRY_MAP[form.country]?.map((item, idx) => (
+                    <option key={idx} value={`${item.p}|${item.d}`}>{item.label || `${item.p} - ${item.d}`}</option>
+                  ))}
+                </select>
+              </div>
+              <div><label className="lbl">Type</label>
+                <select name="type" value={form.type} onChange={fc} className="inp">{TYPES.map(v => <option key={v} value={v}>{v}</option>)}</select>
+              </div>
               <div><label className="lbl">Order ID</label><input name="order_id" value={form.order_id} onChange={fc} placeholder="e.g. ORD-1234" className="inp" /></div>
               <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" /></div>
               <div><label className="lbl">First Reply At (optional)</label><input type="datetime-local" value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
