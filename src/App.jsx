@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Login from './pages/Login'
 const CSRDashboard = lazy(() => import('./pages/User'))
 const Dev = lazy(() => import('./pages/Dev'))
-import CursorTrail from './CursorTrail'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +26,6 @@ const Loader = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CursorTrail />
       <BrowserRouter basename="/qms_react/">
         <Suspense fallback={<Loader />}>
           <Routes>

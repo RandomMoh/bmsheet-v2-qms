@@ -650,7 +650,7 @@ function LiveElapsed({ since }) {
 function Toast({ msg, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 5000); return () => clearTimeout(t) }, [onClose])
   return (
-    <div className="toast" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '14px 20px', borderRadius: 'var(--radius-lg)', fontSize: 13, fontWeight: 500, boxShadow: 'var(--shadow-lg)' }}>
+    <div className="toast fade-in" style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '14px 20px', borderRadius: 'var(--radius-lg)', fontSize: 13, fontWeight: 500, boxShadow: 'var(--shadow-lg)' }}>
       <Icon paths={IC.bell} size={14} style={{ color: 'var(--accent-primary)' }} />{msg}
       <button onClick={onClose} style={{ marginLeft: 4, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 16, cursor: 'pointer' }}>×</button>
     </div>
@@ -733,6 +733,122 @@ function ProjectSelect({ selected, onChange, allProjects }) {
                 )}
               </div>
               <span style={{ fontWeight: selected.includes(p) ? 500 : 400, color: selected.includes(p) ? 'var(--text-main)' : 'var(--text-muted)' }}>{p}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ExpandedCsrRow({ u }) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', borderTop: '1px solid var(--border-subtle)', animation: 'fadeIn 0.3s ease' }}>
+         <div style={{ width: 200, height: 20, borderRadius: 6, marginBottom: 32 }} className="skeleton" />
+         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+           {[1,2,3].map(i => (
+             <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+                <div style={{ width: 80, height: 16, borderRadius: 6, marginBottom: 24 }} className="skeleton" />
+                <div style={{ width: '100%', height: 120, borderRadius: 8 }} className="skeleton" />
+             </div>
+           ))}
+         </div>
+      </div>
+    )
+  }
+
+  const pStats = {}
+  u.orders.forEach(o => {
+    let c = getCountryForProject(o.project_name, o.department)
+    if (c === '—') c = 'Other'
+    let code = `${o.project_name} - ${o.department}`
+    if (!pStats[c]) pStats[c] = {}
+    if (!pStats[c][code]) pStats[c][code] = { count: 0, firstMins: 0, firstCount: 0, lastMins: 0, lastCount: 0 }
+    const ps = pStats[c][code]
+    ps.count++
+    const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+    if (fm !== null) { ps.firstMins += fm; ps.firstCount++ }
+    const lm = diffMin(o['query-received_datetime'], o.query_done)
+    if (lm !== null) { ps.lastMins += lm; ps.lastCount++ }
+  })
+  const res = Object.entries(pStats).map(([country, projs]) => {
+    const projectsArr = Object.entries(projs).sort((a,b) => b[1].count - a[1].count)
+    let maxMins = 0;
+    projectsArr.forEach(([code, ps]) => {
+       if (ps.firstCount > 0) maxMins = Math.max(maxMins, ps.firstMins / ps.firstCount)
+       if (ps.lastCount > 0) maxMins = Math.max(maxMins, ps.lastMins / ps.lastCount)
+    });
+    if (maxMins === 0) maxMins = 60; // fallback scale
+    return { country, projects: projectsArr, maxMins }
+  }).filter(c => c.projects.length > 0)
+
+  return (
+    <div style={{ padding: '32px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)', animation: 'fadeUpAnim 0.4s ease forwards' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Performance</h4>
+      </div>
+
+      {res.length === 0 ? (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No completed projects in this period.</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, alignItems: 'start' }}>
+          {res.map(cStats => (
+            <div key={cStats.country} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)', padding: '24px', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                 <div style={{ width: 8, height: 24, background: 'var(--accent-primary)', borderRadius: 4 }}></div>
+                 <h5 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cStats.country}</h5>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', gap: 16, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)', marginBottom: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Avg 1st Reply</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Avg Done</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {cStats.projects.map(([code, ps]) => (
+                  <div key={code} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', gap: 16, alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', transition: 'border-color 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                       <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>{ps.count}</span>
+                       <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={code}>{code}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                       {ps.firstCount > 0 ? (
+                         <>
+                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--status-info)', flexShrink: 0 }}></div>
+                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 6, borderRadius: 4, overflow: 'hidden' }}>
+                             <div style={{ width: `${Math.min(100, (ps.firstMins / ps.firstCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-info)', borderRadius: 4 }}></div>
+                           </div>
+                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', width: 45, textAlign: 'right' }}>{durStr(ps.firstMins / ps.firstCount)}</span>
+                         </>
+                       ) : (
+                         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
+                       )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                       {ps.lastCount > 0 ? (
+                         <>
+                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--status-success)', flexShrink: 0 }}></div>
+                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 6, borderRadius: 4, overflow: 'hidden' }}>
+                             <div style={{ width: `${Math.min(100, (ps.lastMins / ps.lastCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-success)', borderRadius: 4 }}></div>
+                           </div>
+                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', width: 45, textAlign: 'right' }}>{durStr(ps.lastMins / ps.lastCount)}</span>
+                         </>
+                       ) : (
+                         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
+                       )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -1371,67 +1487,7 @@ export default function CSRPortal() {
                       </div>
                     </div>
 
-                    {expandedCsr === u.name && (
-                      <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border-subtle)', animation: 'fadeIn 0.3s ease' }}>
-                        <div style={{ marginTop: 24 }}>
-                          <div>
-                            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projects Overview</h4>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
-                              {(() => {
-                                const pStats = {}
-                                u.orders.forEach(o => {
-                                  let c = getCountryForProject(o.project_name, o.department)
-                                  if (c === '—') c = 'Other'
-                                  let code = `${o.project_name} - ${o.department}`
-                                  if (!pStats[c]) pStats[c] = {}
-                                  if (!pStats[c][code]) pStats[c][code] = { count: 0, firstMins: 0, firstCount: 0, lastMins: 0, lastCount: 0 }
-                                  const ps = pStats[c][code]
-                                  ps.count++
-                                  const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
-                                  if (fm !== null) { ps.firstMins += fm; ps.firstCount++ }
-                                  const lm = diffMin(o['query-received_datetime'], o.query_done)
-                                  if (lm !== null) { ps.lastMins += lm; ps.lastCount++ }
-                                })
-                                const res = Object.entries(pStats).map(([country, projs]) => ({
-                                  country,
-                                  projects: Object.entries(projs).sort((a,b) => b[1].count - a[1].count)
-                                })).filter(c => c.projects.length > 0)
-                                
-                                if (res.length === 0) return <div style={{ color: 'var(--text-muted)' }}>No projects</div>
-                                return res.map(cStats => (
-                                  <div key={cStats.country} style={{ flex: '1 1 300px', minWidth: 280 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em', borderBottom: '2px solid var(--border-subtle)', paddingBottom: 4 }}>
-                                      {cStats.country}
-                                    </div>
-                                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                                      <thead>
-                                        <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                          <th style={{ padding: '6px 0', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Project</th>
-                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>First Reply</th>
-                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>Last Reply</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {cStats.projects.map(([code, ps]) => (
-                                          <tr key={code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                            <td style={{ padding: '6px 0', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={code}>
-                                              {code}
-                                            </td>
-                                            <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.firstCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.firstCount > 0 ? durStr(ps.firstMins / ps.firstCount) : '—'}</td>
-                                            <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.lastCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.lastCount > 0 ? durStr(ps.lastMins / ps.lastCount) : '—'}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                ))
-                              })()}
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
-                    )}
+                    {expandedCsr === u.name && <ExpandedCsrRow u={u} />}
                   </div>
                 ))}
                 {dashSorted.length === 0 && (

@@ -113,7 +113,7 @@ $CSR_USER_IDS = [
 if ($thread_ts) {
     if ($sender_user && in_array($sender_user, $CSR_USER_IDS)) {
         $esc_thread_ts = mysqli_real_escape_string($conn, $thread_ts);
-        $replyNow      = date('Y-m-d H:i:s');
+        $replyNow      = $ts ? date('Y-m-d H:i:s', intval($ts)) : date('Y-m-d H:i:s');
         $esc_replyNow  = mysqli_real_escape_string($conn, $replyNow);
 
         $update_sql = "UPDATE `order`
@@ -325,8 +325,9 @@ Return a single JSON object:
   "is_order": boolean,
   "department": "one of: ' . $validDepartments . '",
   "project_name": "one of: ' . $validProjects . '",
-  "type": "New Order or Amend",
-  "order_id": "extracted order number or property address"
+  "type": "one of: New Order, Amend, Completion, Issue",
+  "order_id": "extracted order number or property address",
+  "remark": "extract the reason for issue or completion notes (empty if none)"
 }
 
 STRICT RULES — follow exactly:
@@ -336,20 +337,29 @@ WHAT IS AN ORDER (is_order: true):
 - A message containing an ORDER NUMBER like #314924, #313583, Order #314888, Portal Order #315052
 - A message about creating, amending, or redoing a floor plan, 3D render, photo edit, etc.
 - A message asking to "monitor" or "complete" specific order numbers — these ARE orders to track
+- A message stating an order is uploaded, completed, or has an issue FOR A SPECIFIC ORDER.
 - IMPORTANT: If the message contains ANY order number (#XXXXXX format), it IS an order regardless of surrounding text
 
 WHAT IS NOT AN ORDER (is_order: false):
 - Greetings, thank yous, good morning messages with NO order numbers
 - General questions with no order numbers like "are these done?", "how is everyone?"
 - Internal coordination with NO specific order numbers like "they are due in 2 hours"
+- Messages asking for an update, ETA, or status check on an existing order without providing a new order or amendment.
 - Messages that are just punctuation, emoji, or under 5 words with no address/order number
-- Messages saying "Plan Done", "Uploaded on portal", "files have crashed" (STATUS UPDATES with no new order)
 - File-only uploads with no caption (unless channel context implies all uploads are orders)
 
 DEPARTMENT & PROJECT RULES:
 - ONLY set department/project if the message EXPLICITLY mentions a specific one by name.
 - If not mentioned, return "Unknown". Do NOT guess — the system will auto-assign from the channel.
-- type: "Amend" if message mentions changes/amendments/redo/update, otherwise "New Order"
+
+TYPE DETERMINATION (CRITICAL):
+- Evaluate the ENTIRE message. Do not be fooled by order metadata blocks.
+- If the message contains "Uploaded on portal", "Uploaded On Portal", "done", "completed", "ready", "cleared", "this should be done", or "sent" anywhere (especially at the end), type MUST BE "Completion".
+- If the message mentions "issue", "missing", "error", "redo", "revision", "changes", type MUST BE "Issue".
+- If the message has BOTH "issue/not clear" and "Uploaded on portal", prioritize "Completion" if the overall goal was to deliver the file, or "Issue" if they are blocked. Usually "Uploaded on Portal" means it is done, so use "Completion".
+- If it just asks for an amendment, type is "Amend".
+- Otherwise, type is "New Order".
+
 - order_id: prefer "#XXXXXX" order number if present, otherwise use the property address
 
 Return ONLY the JSON object. No explanation.';
@@ -391,9 +401,12 @@ if (strpos($cleanText, 'IE') !== false) {
 }
 
 $type = isset($parsed['type']) ? trim($parsed['type']) : '';
-if ($type !== 'New Order' && $type !== 'Amend') {
+if (!in_array($type, ['New Order', 'Amend', 'Completion', 'Issue'])) {
     $type = 'New Order';
 }
+
+$remark = isset($parsed['remark']) ? trim($parsed['remark']) : '';
+$esc_remark = mysqli_real_escape_string($conn, $remark);
 
 preg_match_all('/#(\d{4,7})/', $cleanText, $orderMatches);
 $extractedOrders = array_unique($orderMatches[1]);
@@ -405,8 +418,8 @@ if (empty($extractedOrders)) {
 
 debugLog("Found " . count($extractedOrders) . " order(s): " . implode(', #', $extractedOrders));
 
-$now   = date('Y-m-d H:i:s');
-$date  = date('Y-m-d');
+$now   = $ts ? date('Y-m-d H:i:s', intval($ts)) : date('Y-m-d H:i:s');
+$date  = $ts ? date('Y-m-d', intval($ts)) : date('Y-m-d');
 $year  = (int)date('Y');
 $month = date('m');
 
@@ -428,37 +441,81 @@ foreach ($extractedOrders as $singleOrder) {
 
     $esc_orderId = mysqli_real_escape_string($conn, $singleOrder);
 
+    // Find latest order by ID
     $dup_res = mysqli_query($conn,
-        "SELECT id FROM `order`
+        "SELECT id, status FROM `order`
          WHERE `propery-order` = '$esc_orderId'
-         AND `date` = '$esc_date'
-         LIMIT 1"
+         ORDER BY id DESC LIMIT 1"
     );
+    
+    $existing = null;
     if ($dup_res && mysqli_num_rows($dup_res) > 0) {
-        debugLog("Duplicate skipped: #$singleOrder (already logged today).");
-        $skippedOrders[] = $singleOrder;
-        continue;
+        $existing = mysqli_fetch_assoc($dup_res);
     }
 
     $orderTs     = (count($extractedOrders) > 1) ? $ts . '_' . $singleOrder : $ts;
     $esc_orderTs = mysqli_real_escape_string($conn, $orderTs);
 
-    $insert_sql = "INSERT INTO `order`
-        (`year`, `month`, `date`, `communication_medium`, `project_name`, `department`,
-         `type`, `propery-order`, `query-received_datetime`, `inserted_datetime`,
-         `qname`, `status`, `reminder_hours`, `instruction`, `slack_ts`)
-        VALUES
-        ('$esc_year', '$esc_month', '$esc_date', 'Slack', '$esc_projectName', '$esc_dept',
-         '$esc_type', '$esc_orderId', '$esc_now', '$esc_now',
-         'Slack Bot', 'pending', 4, '', '$esc_orderTs')";
-
-    $insert_res = mysqli_query($conn, $insert_sql);
+    $insert_res = false;
+    $remark_sql = ($esc_remark !== '') ? ", `instruction` = '$esc_remark'" : "";
+    
+    if ($type === 'Completion') {
+        if ($existing) {
+            $eid = $existing['id'];
+            $insert_res = mysqli_query($conn, "UPDATE `order` SET `status` = 'completed', `query_done` = '$esc_now', `query-first-reply_datetime` = COALESCE(`query-first-reply_datetime`, '$esc_now') $remark_sql WHERE id = '$eid'");
+            debugLog("Completion message: updated existing order #$singleOrder to completed and stamped query_done.");
+        } else {
+            $insert_sql = "INSERT INTO `order`
+                (`year`, `month`, `date`, `communication_medium`, `project_name`, `department`,
+                 `type`, `propery-order`, `query-received_datetime`, `query-first-reply_datetime`, `inserted_datetime`,
+                 `qname`, `status`, `query_done`, `reminder_hours`, `instruction`, `slack_ts`)
+                VALUES
+                ('$esc_year', '$esc_month', '$esc_date', 'Slack', '$esc_projectName', '$esc_dept',
+                 '$esc_type', '$esc_orderId', '$esc_now', '$esc_now', '$esc_now',
+                 'Slack Bot', 'completed', '$esc_now', 4, '$esc_remark', '$esc_orderTs')";
+            $insert_res = mysqli_query($conn, $insert_sql);
+            debugLog("Completion message: created NEW completed order #$singleOrder.");
+        }
+    } elseif ($type === 'Issue' || $type === 'Amend') {
+        if ($existing) {
+            $eid = $existing['id'];
+            $insert_res = mysqli_query($conn, "UPDATE `order` SET `status` = 'issue' $remark_sql WHERE id = '$eid'");
+            debugLog("Issue message: updated existing order #$singleOrder to issue.");
+        } else {
+            $insert_sql = "INSERT INTO `order`
+                (`year`, `month`, `date`, `communication_medium`, `project_name`, `department`,
+                 `type`, `propery-order`, `query-received_datetime`, `query-first-reply_datetime`, `inserted_datetime`,
+                 `qname`, `status`, `reminder_hours`, `instruction`, `slack_ts`)
+                VALUES
+                ('$esc_year', '$esc_month', '$esc_date', 'Slack', '$esc_projectName', '$esc_dept',
+                 '$esc_type', '$esc_orderId', '$esc_now', NULL, '$esc_now',
+                 'Slack Bot', 'issue', 4, '$esc_remark', '$esc_orderTs')";
+            $insert_res = mysqli_query($conn, $insert_sql);
+            debugLog("Issue message: created NEW issue order #$singleOrder.");
+        }
+    } else {
+        // New Order
+        if ($existing && $existing['status'] !== 'completed' && $existing['status'] !== 'issue') {
+            debugLog("Duplicate skipped: #$singleOrder (already logged active order).");
+            $skippedOrders[] = $singleOrder;
+            continue;
+        }
+        $insert_sql = "INSERT INTO `order`
+            (`year`, `month`, `date`, `communication_medium`, `project_name`, `department`,
+             `type`, `propery-order`, `query-received_datetime`, `inserted_datetime`,
+             `qname`, `status`, `reminder_hours`, `instruction`, `slack_ts`)
+            VALUES
+            ('$esc_year', '$esc_month', '$esc_date', 'Slack', '$esc_projectName', '$esc_dept',
+             '$esc_type', '$esc_orderId', '$esc_now', '$esc_now',
+             'Slack Bot', 'pending', 4, '', '$esc_orderTs')";
+        $insert_res = mysqli_query($conn, $insert_sql);
+    }
 
     if ($insert_res) {
         $loggedOrders[] = $singleOrder;
-        debugLog("✅ ORDER LOGGED from #$channelName: #$singleOrder | Dept: $department | Proj: $projectName | Type: $type");
+        debugLog("✅ LOG/UPDATE SUCCESS for #$singleOrder | Type: $type");
     } else {
-        debugLog("❌ DB INSERT FAILED for #$singleOrder: " . mysqli_error($conn));
+        debugLog("❌ DB ERROR for #$singleOrder: " . mysqli_error($conn));
     }
 }
 
