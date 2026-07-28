@@ -19,7 +19,7 @@ $password = $data->password;
 $role = $data->role;
 
 define('MAINTENANCE_MODE', true);
-$ALLOWED_USERS = ['M/2309', 'm/2309'];
+$ALLOWED_USERS = ['M/2309', 'm/2309', 'M', 'm', 'Moh', 'moh'];
 
 $req_user = trim($data->username);
 $is_allowed = false;
