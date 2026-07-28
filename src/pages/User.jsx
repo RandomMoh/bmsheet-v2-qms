@@ -38,80 +38,108 @@ const IC = {
 const MEDIUMS = ['Slack', 'Skype', 'MS Teams', 'BR Outlook Account', 'Outlook Email Order Account', 'Outlook Email BM Support Account', 'Outlook Email Portal Account', 'Queries Center Gmail', 'HelpScout', 'Focal MP Mailbox', 'TD Support Email', 'Cubi Chat', 'PHOTO BR OUTLOOK MAIL', 'FP BR OUTLOOK MAIL']
 const COUNTRY_MAP = {
   'UK': [
-    { p: 'Code', d: 'Photo Enhancement' },
-    { p: 'Code', d: 'Floor Plan' },
-    { p: 'Code', d: 'Video Editing' },
-    { p: 'PB', d: 'Floor Plan' },
+    { p: 'Focal CRM', d: 'Photo Enhancement' },
+    { p: 'PB', d: 'Photo Enhancement' },
     { p: 'Prestige', d: 'Photo Enhancement' },
-    { p: 'Focal MP', d: 'Floor Plan' },
-    { p: 'Focal Video', d: 'Video Editing' },
     { p: 'HDR', d: 'Photo Enhancement' },
+    { p: 'Code', d: 'Photo Enhancement' },
     { p: 'Single', d: 'Photo Enhancement' },
-    { p: 'Capture', d: 'Photo Enhancement' },
-    { p: 'Simple', d: 'Photo Enhancement' },
     { p: 'Scan', d: 'Photo Enhancement' },
-    { p: 'BB', d: 'Photo Enhancement' },
     { p: 'JH', d: 'Photo Enhancement' },
-    { p: 'MA', d: 'Photo Enhancement' },
     { p: 'AH', d: 'Photo Enhancement' },
-    { p: 'CB', d: 'Photo Enhancement' },
     { p: 'GF', d: 'Photo Enhancement' },
     { p: 'BR', d: 'Photo Enhancement' },
-    { p: 'Creative', d: 'Photo Enhancement' },
-    { p: 'HC', d: 'Photo Enhancement' },
-    { p: 'CT', d: 'Photo Enhancement' },
-    { p: 'GP', d: 'Photo Enhancement' },
-    { p: 'ME', d: 'Photo Enhancement' },
-    { p: 'Now', d: 'Photo Enhancement' }
+
+    { p: 'PB', d: 'Floor Plan' },
+    { p: 'Code', d: 'Floor Plan' },
+    { p: 'Focal MP', d: 'Floor Plan' },
+    { p: 'Single', d: 'Floor Plan' },
+    { p: 'Capture', d: 'Floor Plan' },
+    { p: 'Simple', d: 'Floor Plan' },
+    { p: 'BB', d: 'Floor Plan' },
+    { p: 'MA', d: 'Floor Plan' },
+    { p: 'CB', d: 'Floor Plan' },
+    { p: 'Scan', d: 'Floor Plan' },
+    { p: 'Creative', d: 'Floor Plan' },
+    { p: 'JH', d: 'Floor Plan' },
+    { p: 'HC', d: 'Floor Plan' },
+    { p: 'CT', d: 'Floor Plan' },
+    { p: 'AH', d: 'Floor Plan' },
+    { p: 'GF', d: 'Floor Plan' },
+    { p: 'BR', d: 'Floor Plan' },
+    { p: 'GP', d: 'Floor Plan' },
+    { p: 'ME', d: 'Floor Plan' },
+    { p: 'Now', d: 'Floor Plan' },
+
+    { p: 'PB', d: 'Video Editing' },
+    { p: 'Focal', d: 'Video Editing' },
+    { p: 'Focal Video', d: 'Video Editing' },
+
+    { p: 'Capture', d: 'Virtual Staging' },
+    { p: 'Code', d: 'Virtual Staging' }
   ],
-  'Australia': [
+  'AUS': [
     { p: 'PRO', d: 'Photo Enhancement' },
-    { p: 'PRO', d: 'Virtual Staging' },
-    { p: 'TIFF', d: 'Floor Plan' },
-    { p: 'TIFF', d: 'Virtual Staging' },
-    { p: 'HSA', d: 'Video Editing' },
-    { p: 'HSA', d: 'Virtual Staging' },
     { p: 'FS', d: 'Photo Enhancement' },
-    { p: 'CK', d: 'Floor Plan' },
     { p: 'Metro', d: 'Photo Enhancement' },
-    { p: 'Metro', d: 'Floor Plan' },
+    { p: 'HSA', d: 'Photo Enhancement' },
+
+    { p: 'TIFF', d: 'Floor Plan' },
+    { p: 'CK', d: 'Floor Plan' },
     { p: 'REFP', d: 'Floor Plan' },
     { p: 'SB', d: 'Floor Plan' },
-    { p: 'TQ', d: 'Photo Enhancement' },
-    { p: 'SM', d: 'Photo Enhancement' },
-    { p: 'SKM', d: 'Photo Enhancement' },
-    { p: 'MD', d: 'Photo Enhancement' },
-    { p: 'JL', d: 'Photo Enhancement' },
-    { p: 'Mi', d: 'Photo Enhancement' },
-    { p: 'xactimate', d: 'Photo Enhancement' },
-    { p: 'roomio', d: 'Photo Enhancement' },
-    { p: 'schematic', d: 'Photo Enhancement' },
-    { p: 'Faro', d: 'Photo Enhancement' }
+    { p: 'PRO', d: 'Floor Plan' },
+    { p: 'TQ', d: 'Floor Plan' },
+    { p: 'SM', d: 'Floor Plan' },
+    { p: 'SKM', d: 'Floor Plan' },
+    { p: 'MD', d: 'Floor Plan' },
+    { p: 'FS', d: 'Floor Plan' },
+    { p: 'JL', d: 'Floor Plan' },
+    { p: 'Mi', d: 'Floor Plan' },
+    { p: 'Metro', d: 'Floor Plan' },
+    { p: 'xactimate', d: 'Floor Plan' },
+    { p: 'roomio', d: 'Floor Plan' },
+    { p: 'schematic', d: 'Floor Plan' },
+    { p: 'Faro', d: 'Floor Plan' },
+    { p: 'HSA', d: 'Floor Plan' },
+
+    { p: 'HSA', d: 'Video Editing' },
+
+    { p: 'PRO', d: 'Virtual Staging' },
+    { p: 'Metro', d: 'Virtual Staging' },
+    { p: 'HSA', d: 'Virtual Staging' },
+    { p: 'TIFF', d: 'Virtual Staging' }
   ],
-  'South Africa': [
+  'SA': [
     { p: 'SA', d: 'Photo Enhancement' },
+    
     { p: 'SA', d: 'Floor Plan' },
-    { p: 'SA', d: 'Video Editing' },
-    { p: 'FF', d: 'Floor Plan' }
+    { p: 'FF', d: 'Floor Plan' },
+    
+    { p: 'SA', d: 'Video Editing' }
   ],
-  'Canada/Other (USA)': [
+  'Canada / US': [
     { p: 'HM', d: 'Photo Enhancement' },
-    { p: 'HM', d: 'Floor Plan' },
-    { p: 'HM', d: 'Video Editing' },
     { p: 'Open House', d: 'Photo Enhancement' },
+
+    { p: 'HM', d: 'Floor Plan' },
     { p: 'Open House', d: 'Floor Plan' },
-    { p: 'PM', d: 'Video Editing' },
-    { p: 'PM', d: 'Floor Plan' },
     { p: 'WIN', d: 'Floor Plan' },
-    { p: 'Nat3D', d: 'Floor Plan' }
+    { p: 'Nat3D', d: 'Floor Plan' },
+    { p: 'PM', d: 'Floor Plan' },
+
+    { p: 'HM', d: 'Video Editing' },
+    { p: 'PM', d: 'Video Editing' }
   ],
-  'EU (Vietnam)': [
+  'Veitnam': [
     { p: 'Cubi', d: 'Photo Enhancement' },
-    { p: 'Cubi', d: 'Floor Plan', label: 'Cubi - 2D Floor Plan' },
-    { p: 'Cubi', d: '3D Floor Plan' },
     { p: 'Esoft', d: 'Photo Enhancement' },
+
+    { p: 'Cubi', d: 'Floor Plan', label: 'Cubi - 2D Floor Plan' },
+    { p: 'Cubi', d: '3D Floor Plan', label: 'Cubi - 3D Floor Plan' },
     { p: 'Esoft', d: 'Floor Plan', label: 'Esoft - 2D Floor Plan' },
-    { p: 'Esoft', d: '3D Floor Plan' },
+    { p: 'Esoft', d: '3D Floor Plan', label: 'Esoft - 3D Floor Plan' },
+
     { p: 'Esoft', d: 'Video Editing' }
   ]
 };
@@ -1400,8 +1428,8 @@ export default function CSRPortal() {
                                       <thead>
                                         <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                                           <th style={{ padding: '6px 0', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Project</th>
-                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>1st Reply</th>
-                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>Last Reply</th>
+                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>First Reply</th>
+                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>Last Reply</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -1710,29 +1738,16 @@ export default function CSRPortal() {
               <button className="dialog-close" onClick={() => !busy && setOpen(false)}><Icon paths={IC.close} size={16} /></button>
             </div>
             <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div><label className="lbl">Communication Medium</label>
-                <select name="medium" value={form.medium} onChange={fc} className="inp">{MEDIUMS.map(v => <option key={v} value={v}>{v}</option>)}</select>
-              </div>
-              <div><label className="lbl">Country</label>
-                <select name="country" value={form.country} onChange={(e) => {
-                  const c = e.target.value;
-                  const first = COUNTRY_MAP[c][0];
-                  setForm(p => ({ ...p, country: c, project: first.p, department: first.d }));
-                }} className="inp">{COUNTRIES.map(v => <option key={v} value={v}>{v}</option>)}</select>
-              </div>
-              <div><label className="lbl">Project & Department</label>
-                <select value={`${form.project}|${form.department}`} onChange={(e) => {
-                  const [p, d] = e.target.value.split('|');
-                  setForm(prev => ({ ...prev, project: p, department: d }));
-                }} className="inp">
-                  {COUNTRY_MAP[form.country]?.map((item, idx) => (
-                    <option key={idx} value={`${item.p}|${item.d}`}>{item.label || `${item.p} - ${item.d}`}</option>
-                  ))}
-                </select>
-              </div>
-              <div><label className="lbl">Type</label>
-                <select name="type" value={form.type} onChange={fc} className="inp">{TYPES.map(v => <option key={v} value={v}>{v}</option>)}</select>
-              </div>
+              {[
+                { l: 'Communication Medium', k: 'medium', opts: MEDIUMS },
+                { l: 'Project Name', k: 'project', opts: PROJECTS },
+                { l: 'Department', k: 'department', opts: DEPTS },
+                { l: 'Type', k: 'type', opts: TYPES },
+              ].map(f => (
+                <div key={f.k}><label className="lbl">{f.l}</label>
+                  <select name={f.k} value={form[f.k]} onChange={fc} className="inp">{f.opts.map(v => <option key={v} value={v}>{v}</option>)}</select>
+                </div>
+              ))}
               <div><label className="lbl">Order ID</label><input name="order_id" value={form.order_id} onChange={fc} placeholder="e.g. ORD-1234" className="inp" /></div>
               <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" /></div>
               <div><label className="lbl">First Reply At (optional)</label><input type="datetime-local" value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
