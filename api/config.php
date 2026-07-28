@@ -55,7 +55,8 @@ $exempt_scripts = [
     'dev-webhook-status.php',
     'get-slack-thread.php',
     'setup_slack_channels.php',
-    'create-csr.php'
+    'create-csr.php',
+    'get-activity-logs.php'
 ];
 
 if (!in_array($script_name, $exempt_scripts)) {

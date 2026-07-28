@@ -9,8 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-if (!isSuperAdmin()) {
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized Access. Super Admin required.']);
+if (!isSuperAdmin() && (!isset($_SESSION['dev_auth']) || $_SESSION['dev_auth'] !== true)) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized Access. Super Admin or Dev required.']);
     exit();
 }
 
