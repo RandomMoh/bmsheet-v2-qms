@@ -1369,7 +1369,7 @@ export default function CSRPortal() {
 
                           <div style={{ gridColumn: 'span 2' }}>
                             <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projects Overview</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
                               {(() => {
                                 const pStats = {}
                                 u.orders.forEach(o => {
@@ -1392,22 +1392,24 @@ export default function CSRPortal() {
                                 
                                 if (res.length === 0) return <div style={{ color: 'var(--text-muted)' }}>No projects</div>
                                 return res.map(cStats => (
-                                  <div key={cStats.country}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.05em' }}>{cStats.country}</div>
-                                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                                  <div key={cStats.country} style={{ flex: '1 1 300px', minWidth: 280 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em', borderBottom: '2px solid var(--border-subtle)', paddingBottom: 4 }}>
+                                      {cStats.country}
+                                    </div>
+                                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                                       <thead>
                                         <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                          <th style={{ padding: '4px 0', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Project</th>
-                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>Total</th>
-                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>1st Reply</th>
-                                          <th style={{ padding: '4px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 80 }}>Last Reply</th>
+                                          <th style={{ padding: '6px 0', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Project</th>
+                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>1st Reply</th>
+                                          <th style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', width: 60 }}>Last Reply</th>
                                         </tr>
                                       </thead>
                                       <tbody>
                                         {cStats.projects.map(([code, ps]) => (
                                           <tr key={code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                                            <td style={{ padding: '6px 0', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{code}</td>
-                                            <td style={{ padding: '6px 0', textAlign: 'center', fontWeight: 600 }}>{ps.count}</td>
+                                            <td style={{ padding: '6px 0', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={code}>
+                                              {code}
+                                            </td>
                                             <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.firstCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.firstCount > 0 ? durStr(ps.firstMins / ps.firstCount) : '—'}</td>
                                             <td style={{ padding: '6px 0', textAlign: 'center' }} className={ps.lastCount > 0 ? 'cell-good' : 'cell-muted'}>{ps.lastCount > 0 ? durStr(ps.lastMins / ps.lastCount) : '—'}</td>
                                           </tr>
