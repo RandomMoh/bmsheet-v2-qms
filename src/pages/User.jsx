@@ -196,8 +196,10 @@ function parseDurH(s) {
 }
 const getCountryForProject = (proj, dept) => {
   if (!proj || !dept || proj === 'Unknown' || dept === 'Unknown') return '—'
+  const pLower = String(proj).trim().toLowerCase();
+  const dLower = String(dept).trim().toLowerCase();
   for (const [country, items] of Object.entries(COUNTRY_MAP)) {
-    if (items.some(i => i.p === proj && i.d === dept)) return country;
+    if (items.some(i => i.p.toLowerCase() === pLower && i.d.toLowerCase() === dLower)) return country;
   }
   return '—';
 }
