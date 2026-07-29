@@ -931,6 +931,36 @@ function CsrShiftsView({ API }) {
         </div>
       </div>
 
+      {/* Currently Active Users List Box */}
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
+            Currently Logged-in / Active Users ({data?.active_users_list?.length || 0})
+          </h3>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Includes all active accounts (Management, Admins, Dev, CSRs)</span>
+        </div>
+
+        {(!data?.active_users_list || data.active_users_list.length === 0) ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic' }}>No active users detected right now</div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {data.active_users_list.map(u => (
+              <div key={u.username} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {u.displayName}
+                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent-primary)', fontWeight: 600 }}>{u.role}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>@{u.username} · {u.lastActive ? new Date(u.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         {shiftKeys.map(sKey => {
           const shift = schedule[sKey] || { label: '', csrs: [], isActive: false }

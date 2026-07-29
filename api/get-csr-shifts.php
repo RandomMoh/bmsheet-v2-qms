@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Karachi');
 include_once 'config.php';
 
-// Shift schedule listing names per shift with both Ayeshas mapped
+// Shift schedule listing names per shift — Ahmed Hanif moved to Shift 2
 $schedule = [
     'shift1' => [
         'label' => '7am till 4pm',
@@ -12,13 +12,13 @@ $schedule = [
             ['name' => 'Amna Zaheer', 'username' => 'amna.zaheer'],
             ['name' => 'Alishba CSR', 'username' => 'alishba'],
             ['name' => 'Khadija CSR', 'username' => 'khadija'],
-            ['name' => 'Romaisa', 'username' => 'romaisa'],
-            ['name' => 'Ahmed Hanif', 'username' => 'ahmed.hanif']
+            ['name' => 'Romaisa', 'username' => 'romaisa']
         ]
     ],
     'shift2' => [
         'label' => '12pm till 9pm',
         'csrs' => [
+            ['name' => 'Ahmed Hanif', 'username' => 'ahmed.hanif'],
             ['name' => 'Hafsa CSR', 'username' => 'hafsa'],
             ['name' => 'Ayesha Waris', 'username' => 'ayesha_waris'],
             ['name' => 'Saman CSR', 'username' => 'saman'],
@@ -40,12 +40,32 @@ $schedule = [
     ]
 ];
 
-// Fetch active sessions from active_sessions table
-$active_res = mysqli_query($conn, "SELECT user_id, username, last_active FROM active_sessions WHERE last_active >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)");
+// Fetch active sessions from active_sessions table with detailed info
+$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname 
+    FROM active_sessions a 
+    LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username))
+    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+    ORDER BY a.last_active DESC");
+
 $active_users = [];
+$active_users_list = [];
+$seen_users = [];
+
 if ($active_res) {
     while ($r = mysqli_fetch_assoc($active_res)) {
-        $active_users[strtolower($r['username'])] = $r['last_active'];
+        $uname = strtolower($r['username']);
+        $active_users[$uname] = $r['last_active'];
+        
+        if (!isset($seen_users[$uname])) {
+            $seen_users[$uname] = true;
+            $active_users_list[] = [
+                'user_id' => $r['user_id'],
+                'username' => $r['username'],
+                'displayName' => $r['dname'] ?: $r['username'],
+                'role' => $r['role'] ?: 'User',
+                'lastActive' => $r['last_active']
+            ];
+        }
     }
 }
 
@@ -53,8 +73,22 @@ if ($active_res) {
 $recent_order_res = mysqli_query($conn, "SELECT DISTINCT qname, completed_by FROM `order` WHERE date >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
 if ($recent_order_res) {
     while ($r = mysqli_fetch_assoc($recent_order_res)) {
-        if (!empty($r['qname'])) $active_users[strtolower($r['qname'])] = date('Y-m-d H:i:s');
-        if (!empty($r['completed_by'])) $active_users[strtolower($r['completed_by'])] = date('Y-m-d H:i:s');
+        foreach ([$r['qname'], $r['completed_by']] as $nameVal) {
+            if (!empty($nameVal) && strtolower($nameVal) !== 'slack bot') {
+                $uKey = strtolower($nameVal);
+                $active_users[$uKey] = date('Y-m-d H:i:s');
+                if (!isset($seen_users[$uKey])) {
+                    $seen_users[$uKey] = true;
+                    $active_users_list[] = [
+                        'user_id' => 0,
+                        'username' => $nameVal,
+                        'displayName' => $nameVal,
+                        'role' => 'CSR',
+                        'lastActive' => date('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        }
     }
 }
 
@@ -79,7 +113,7 @@ $stats = [
     'scheduled_now' => 0,
     'online_in_shift' => 0,
     'offline_in_shift' => 0,
-    'online_total' => count($active_users)
+    'online_total' => count($active_users_list)
 ];
 
 foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
@@ -134,6 +168,7 @@ echo json_encode([
     'pkt_time' => date('Y-m-d H:i:s'),
     'shift_info' => $shiftInfo,
     'stats' => $stats,
-    'schedule' => $decoratedSchedule
+    'schedule' => $decoratedSchedule,
+    'active_users_list' => $active_users_list
 ]);
 ?>
