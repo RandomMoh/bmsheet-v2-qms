@@ -1058,14 +1058,17 @@ export default function CSRPortal() {
   }), [dashReport])
   const dashAgg = useMemo(() => {
     let totComp = 0, totPend = 0, totNew = 0, totAmend = 0
-    dashSorted.forEach(u => {
-      totComp += u.completedTotal
-      totPend += u.pending
-      totNew += u.newOrd
-      totAmend += u.amend
+    filteredDashOrders.forEach(o => {
+      const isDone = !!(o.query_done || (o.status && o.status.toLowerCase() === 'completed'))
+      const type = (o.type || '').toLowerCase()
+      if (isDone) totComp++
+      else totPend++
+
+      if (type.includes('new')) totNew++
+      else if (type.includes('amend')) totAmend++
     })
     return { totComp, totPend, totNew, totAmend }
-  }, [dashSorted])
+  }, [filteredDashOrders])
 
   const list = section === 'current' ? curOrds : section === 'issue' ? issOrds : doneOrds
   const filtered = useMemo(() => {
