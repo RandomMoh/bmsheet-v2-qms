@@ -72,8 +72,8 @@ if (mysqli_num_rows($q) > 0) {
         // Immediately update active_sessions on login
         $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
             VALUES (?, ?, ?, ?, ?, ?, ?) 
-            ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?");
-        $stmt->bind_param("isssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $dusername, $userRole);
+            ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
+        $stmt->bind_param("isssssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $dusername, $userRole, $sessId, $ip);
         $stmt->execute();
         $stmt->close();
 

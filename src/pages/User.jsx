@@ -1549,17 +1549,20 @@ export default function CSRPortal() {
 
   useEffect(() => {
     if (!user) return
-    const ping = () => {
-      fetch(`${API}/heartbeat.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name, userRole: displayRole })
-      }).catch(() => {})
+    const ping = async () => {
+      try {
+        await fetch(`${API}/heartbeat.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name, userRole: displayRole })
+        })
+        queryClient.invalidateQueries(['csr_shifts'])
+      } catch {}
     }
     ping()
-    const timer = setInterval(ping, 30000)
+    const timer = setInterval(ping, 15000)
     return () => clearInterval(timer)
-  }, [user, displayRole])
+  }, [user, displayRole, queryClient, API])
 
   if (!user) return null
   const initials = displayName[0]?.toUpperCase() || 'U'

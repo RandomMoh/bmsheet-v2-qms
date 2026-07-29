@@ -13,13 +13,13 @@ $now = date('Y-m-d H:i:s');
 if ($userId > 0 && !empty($username)) {
     $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
         VALUES (?, ?, ?, ?, ?, ?, ?) 
-        ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?");
-    $stmt->bind_param("isssssssss", $userId, $username, $role, $sessId, $now, $now, $ip, $now, $username, $role);
+        ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
+    $stmt->bind_param("isssssssssss", $userId, $username, $role, $sessId, $now, $now, $ip, $now, $username, $role, $sessId, $ip);
     $stmt->execute();
     $stmt->close();
 }
 
-// Clean old sessions older than 30 minutes
+// Clean old inactive sessions older than 30 minutes
 $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
 
 echo json_encode(['status' => 'success', 'timestamp' => $now]);
