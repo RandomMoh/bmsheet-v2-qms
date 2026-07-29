@@ -73,9 +73,11 @@ if (mysqli_num_rows($q) > 0) {
         $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
             VALUES (?, ?, ?, ?, ?, ?, ?) 
             ON DUPLICATE KEY UPDATE `last_active` = ?, `login_time` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
-        $stmt->bind_param("isssssssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $now, $dusername, $userRole, $sessId, $ip);
-        $stmt->execute();
-        $stmt->close();
+        if ($stmt) {
+            $stmt->bind_param("issssssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $now, $dusername, $userRole, $sessId, $ip);
+            $stmt->execute();
+            $stmt->close();
+        }
 
         logActivity('Login', ($row['role'] ?? 'CSR') . ' logged in: ' . $row['dname']);
         echo json_encode([
