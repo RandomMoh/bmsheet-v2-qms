@@ -61,6 +61,22 @@ if (mysqli_num_rows($q) > 0) {
         $_SESSION['role'] = 'user';
         $_SESSION['user_id'] = $row['d_id'];
         $_SESSION['username'] = $row['dname'];
+        
+        $userId = (int)$row['d_id'];
+        $dusername = $row['dusername'];
+        $userRole = $row['role'] ?? 'CSR';
+        $sessId = session_id() ?: ('sess_' . $userId);
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $now = date('Y-m-d H:i:s');
+
+        // Immediately update active_sessions on login
+        $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?) 
+            ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?");
+        $stmt->bind_param("isssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $dusername, $userRole);
+        $stmt->execute();
+        $stmt->close();
+
         logActivity('Login', ($row['role'] ?? 'CSR') . ' logged in: ' . $row['dname']);
         echo json_encode([
             "status" => "success",

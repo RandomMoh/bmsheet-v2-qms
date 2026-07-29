@@ -1557,7 +1557,7 @@ export default function CSRPortal() {
       }).catch(() => {})
     }
     ping()
-    const timer = setInterval(ping, 60000)
+    const timer = setInterval(ping, 30000)
     return () => clearInterval(timer)
   }, [user, displayRole])
 

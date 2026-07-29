@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Karachi');
 include_once 'config.php';
 
-// Shift schedule listing names per shift — Ahmed Hanif moved to Shift 2
+// Shift schedule listing names per shift — Ahmed Hanif in Shift 2
 $schedule = [
     'shift1' => [
         'label' => '7am till 4pm',
@@ -40,11 +40,11 @@ $schedule = [
     ]
 ];
 
-// Fetch active sessions from active_sessions table with detailed info
-$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname 
+// Fetch active sessions from active_sessions table with detailed info (15 minutes window)
+$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname, u.dusername 
     FROM active_sessions a 
-    LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username))
-    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+    LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username) OR LOWER(u.dname) = LOWER(a.username))
+    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
     ORDER BY a.last_active DESC");
 
 $active_users = [];
@@ -53,14 +53,20 @@ $seen_users = [];
 
 if ($active_res) {
     while ($r = mysqli_fetch_assoc($active_res)) {
-        $uname = strtolower($r['username']);
-        $active_users[$uname] = $r['last_active'];
+        $lastAct = $r['last_active'];
         
-        if (!isset($seen_users[$uname])) {
-            $seen_users[$uname] = true;
+        // Map all name/username variants to active_users map
+        if (!empty($r['username'])) $active_users[strtolower($r['username'])] = $lastAct;
+        if (!empty($r['dusername'])) $active_users[strtolower($r['dusername'])] = $lastAct;
+        if (!empty($r['dname'])) $active_users[strtolower($r['dname'])] = $lastAct;
+        if (!empty($r['user_id'])) $active_users['id_' . $r['user_id']] = $lastAct;
+        
+        $uKey = strtolower($r['dusername'] ?: $r['username']);
+        if (!isset($seen_users[$uKey])) {
+            $seen_users[$uKey] = true;
             $active_users_list[] = [
                 'user_id' => $r['user_id'],
-                'username' => $r['username'],
+                'username' => $r['dusername'] ?: $r['username'],
                 'displayName' => $r['dname'] ?: $r['username'],
                 'role' => $r['role'] ?: 'User',
                 'lastActive' => $r['last_active']
