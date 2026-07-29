@@ -49,7 +49,6 @@ const COUNTRY_MAP = {
     { p: 'AH', d: 'Photo Enhancement' },
     { p: 'GF', d: 'Photo Enhancement' },
     { p: 'BR', d: 'Photo Enhancement' },
-
     { p: 'PB', d: 'Floor Plan' },
     { p: 'Code', d: 'Floor Plan' },
     { p: 'Focal MP', d: 'Floor Plan' },
@@ -70,20 +69,17 @@ const COUNTRY_MAP = {
     { p: 'GP', d: 'Floor Plan' },
     { p: 'ME', d: 'Floor Plan' },
     { p: 'Now', d: 'Floor Plan' },
-
     { p: 'PB', d: 'Video Editing' },
     { p: 'Focal', d: 'Video Editing' },
     { p: 'Focal Video', d: 'Video Editing' },
-
     { p: 'Capture', d: 'Virtual Staging' },
     { p: 'Code', d: 'Virtual Staging' }
   ],
-  'AUS': [
+  'Australia': [
     { p: 'PRO', d: 'Photo Enhancement' },
     { p: 'FS', d: 'Photo Enhancement' },
     { p: 'Metro', d: 'Photo Enhancement' },
     { p: 'HSA', d: 'Photo Enhancement' },
-
     { p: 'TIFF', d: 'Floor Plan' },
     { p: 'CK', d: 'Floor Plan' },
     { p: 'REFP', d: 'Floor Plan' },
@@ -102,50 +98,49 @@ const COUNTRY_MAP = {
     { p: 'schematic', d: 'Floor Plan' },
     { p: 'Faro', d: 'Floor Plan' },
     { p: 'HSA', d: 'Floor Plan' },
-
     { p: 'HSA', d: 'Video Editing' },
-
     { p: 'PRO', d: 'Virtual Staging' },
     { p: 'Metro', d: 'Virtual Staging' },
     { p: 'HSA', d: 'Virtual Staging' },
     { p: 'TIFF', d: 'Virtual Staging' }
   ],
-  'SA': [
+  'South Africa': [
     { p: 'SA', d: 'Photo Enhancement' },
-    
     { p: 'SA', d: 'Floor Plan' },
     { p: 'FF', d: 'Floor Plan' },
-    
     { p: 'SA', d: 'Video Editing' }
   ],
-  'Canada / US': [
+  'Canada/Other': [
     { p: 'HM', d: 'Photo Enhancement' },
     { p: 'Open House', d: 'Photo Enhancement' },
-
     { p: 'HM', d: 'Floor Plan' },
     { p: 'Open House', d: 'Floor Plan' },
     { p: 'WIN', d: 'Floor Plan' },
     { p: 'Nat3D', d: 'Floor Plan' },
     { p: 'PM', d: 'Floor Plan' },
-
     { p: 'HM', d: 'Video Editing' },
     { p: 'PM', d: 'Video Editing' }
   ],
-  'Veitnam': [
+  'EU (Vietnam)': [
     { p: 'Cubi', d: 'Photo Enhancement' },
     { p: 'Esoft', d: 'Photo Enhancement' },
-
-    { p: 'Cubi', d: 'Floor Plan', label: 'Cubi - 2D Floor Plan' },
-    { p: 'Cubi', d: '3D Floor Plan', label: 'Cubi - 3D Floor Plan' },
-    { p: 'Esoft', d: 'Floor Plan', label: 'Esoft - 2D Floor Plan' },
-    { p: 'Esoft', d: '3D Floor Plan', label: 'Esoft - 3D Floor Plan' },
-
+    { p: 'Cubi', d: 'Floor Plan' },
+    { p: 'Cubi', d: '3D Floor Plan' },
+    { p: 'Esoft', d: 'Floor Plan' },
+    { p: 'Esoft', d: '3D Floor Plan' },
     { p: 'Esoft', d: 'Video Editing' }
   ]
 };
 
 const COUNTRIES = Object.keys(COUNTRY_MAP);
 const ALL_PROJECTS = [...new Set(Object.values(COUNTRY_MAP).flatMap(c => c.map(i => i.p)))];
+// Returns the list of projects for a given country
+const PROJECTS_FOR_COUNTRY = (country) => [...new Set((COUNTRY_MAP[country] || []).map(i => i.p))]
+// Returns the departments for a given country + project combo
+const DEPTS_FOR_COMBO = (country, project) => {
+  const items = (COUNTRY_MAP[country] || []).filter(i => i.p === project)
+  return [...new Set(items.map(i => i.d))]
+}
 const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editing', 'Virtual Staging']
 const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
@@ -389,11 +384,12 @@ function buildReportWithPending(orders, completedByNames) {
     initUserStats(byUser, enterer)
     initUserStats(byUser, completer)
 
+    byUser[enterer].enteredTotal++
+
     const isDone = o.query_done || (o.status && o.status.toLowerCase() === 'completed')
 
     if (isDone) {
       classifyOrder(o, byUser, firstOwner, completionOwner)
-      if (!isSlack) byUser[enterer].enteredTotal++
       byUser[completer].completedTotal++
       if (isSlack) {
         byUser[completer].botCompleted++
@@ -912,6 +908,9 @@ export default function CSRPortal() {
 
   const playBell = useRef(null)
   useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
     playBell.current = (times = 1) => {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
       for (let i = 0; i < times; i++) {
@@ -963,7 +962,7 @@ export default function CSRPortal() {
   const statsQuery = useQuery({
     queryKey: ['stats', fromDate, toDate],
     queryFn: () => fetch(`${API}/get-stats.php${dp}`).then(r => r.json()),
-    enabled: !!user, refetchInterval: 10000,
+    enabled: !!user, refetchInterval: 3000,
   })
 
   const currentQuery = useQuery({
@@ -975,31 +974,35 @@ export default function CSRPortal() {
       const newCount = ca.length - prevCount.current
       if (prevCount.current > 0 && newCount > 0) {
         playBell.current?.(newCount)
-        setToast(`${newCount} new quer${newCount > 1 ? 'ies' : 'y'} added!`)
+        const msg = `${newCount} new quer${newCount > 1 ? 'ies' : 'y'} added!`
+        setToast(msg)
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification("QMS Order Added", { body: msg, icon: '/favicon.ico' })
+        }
       }
       prevCount.current = ca.length
       return data
     },
-    enabled: !!user, refetchInterval: 10000,
+    enabled: !!user, refetchInterval: 3000,
   })
 
   const issueQuery = useQuery({
     queryKey: ['issueOrders'],
     queryFn: () => fetch(`${API}/get-issue-orders.php`).then(r => r.json()),
-    enabled: !!user, refetchInterval: 10000,
+    enabled: !!user, refetchInterval: 3000,
   })
 
   const doneQuery = useQuery({
     queryKey: ['doneOrders', reportFrom, reportTo],
     queryFn: () => fetch(`${API}/get-done-orders.php${donep}`).then(r => r.json()),
-    enabled: !!user, refetchInterval: 10000,
+    enabled: !!user, refetchInterval: 3000,
   })
 
   const dashQ = (dashFrom || dashTo) ? `?from_date=${encodeURIComponent(dashFrom)}&to_date=${encodeURIComponent(dashTo)}` : ''
   const dashQuery = useQuery({
     queryKey: ['dashOrders', dashFrom, dashTo],
     queryFn: () => fetch(`${API}/get-orders.php${dashQ}`).then(r => r.json()),
-    enabled: !!user && section === 'qms_dashboard', refetchInterval: 10000,
+    enabled: !!user && section === 'qms_dashboard', refetchInterval: 3000,
   })
 
   const { data: completedByNames = [] } = useQuery({
@@ -1016,7 +1019,11 @@ export default function CSRPortal() {
 
   const dashOrdersData = dashQuery.data?.data || (Array.isArray(dashQuery.data) ? dashQuery.data : [])
   const dashReport = useMemo(() => buildReportWithPending(dashOrdersData, completedByNames), [dashOrdersData, completedByNames])
-  const dashSorted = useMemo(() => Object.values(dashReport).sort((a, b) => b.completedTotal - a.completedTotal), [dashReport])
+  const dashSorted = useMemo(() => Object.values(dashReport).sort((a, b) => {
+    if (a.name === 'Unassigned') return 1;
+    if (b.name === 'Unassigned') return -1;
+    return b.completedTotal - a.completedTotal;
+  }), [dashReport])
   const dashAgg = useMemo(() => {
     let totComp = 0, totPend = 0, totNew = 0, totAmend = 0
     dashSorted.forEach(u => {
@@ -1156,16 +1163,40 @@ export default function CSRPortal() {
   const openNew = () => {
     const d = defaultPKTDL()
     setDlH(d.h); setDlMin(d.min); setDlAp(d.ap); setDlMode('4')
-    setForm({ medium: MEDIUMS[0], country: COUNTRIES[0], project: COUNTRY_MAP[COUNTRIES[0]][0].p, department: COUNTRY_MAP[COUNTRIES[0]][0].d, type: TYPES[0], order_id: '' })
+    const firstCountry = COUNTRIES[0]
+    const firstProject = PROJECTS_FOR_COUNTRY(firstCountry)[0] || ''
+    const firstDepts = DEPTS_FOR_COMBO(firstCountry, firstProject)
+    const firstDept = firstDepts[0] || ''
+    setForm({ medium: MEDIUMS[0], country: firstCountry, project: firstProject, department: firstDept, type: TYPES[0], order_id: '' })
     setRecvTime(''); setFirstReplyTime('')
     setFb(null); setOpen(true)
   }
-  const fc = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }))
+  const fc = e => {
+    const { name, value } = e.target
+    setForm(prev => {
+      if (name === 'country') {
+        const projs = PROJECTS_FOR_COUNTRY(value)
+        const newProj = projs[0] || ''
+        const depts = DEPTS_FOR_COMBO(value, newProj)
+        return { ...prev, country: value, project: newProj, department: depts[0] || '' }
+      }
+      if (name === 'project') {
+        const depts = DEPTS_FOR_COMBO(prev.country, value)
+        return { ...prev, project: value, department: depts[0] || '' }
+      }
+      return { ...prev, [name]: value }
+    })
+  }
 
   const displayName = user ? (user.dname || user.name || user.dusername || 'CSR') : 'CSR'
 
   const handleSubmit = async e => {
     e.preventDefault(); setBusy(true); setFb(null)
+    if (!firstReplyTime) {
+      setFb({ ok: false, msg: 'First Reply At is required.' })
+      setBusy(false)
+      return
+    }
     const now = new Date()
     let tH = parseInt(dlH) % 12
     if (dlAp === 'PM') tH += 12
@@ -1773,19 +1804,34 @@ export default function CSRPortal() {
               <button className="dialog-close" onClick={() => !busy && setOpen(false)}><Icon paths={IC.close} size={16} /></button>
             </div>
             <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {[
-                { l: 'Communication Medium', k: 'medium', opts: MEDIUMS },
-                { l: 'Project Name', k: 'project', opts: PROJECTS },
-                { l: 'Department', k: 'department', opts: DEPTS },
-                { l: 'Type', k: 'type', opts: TYPES },
-              ].map(f => (
-                <div key={f.k}><label className="lbl">{f.l}</label>
-                  <select name={f.k} value={form[f.k]} onChange={fc} className="inp">{f.opts.map(v => <option key={v} value={v}>{v}</option>)}</select>
-                </div>
-              ))}
+              <div><label className="lbl">Communication Medium</label>
+                <select name="medium" value={form.medium} onChange={fc} className="inp">
+                  {MEDIUMS.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Country</label>
+                <select name="country" value={form.country} onChange={fc} className="inp">
+                  {COUNTRIES.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Project Code</label>
+                <select name="project" value={form.project} onChange={fc} className="inp">
+                  {PROJECTS_FOR_COUNTRY(form.country).map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Department</label>
+                <select name="department" value={form.department} onChange={fc} className="inp">
+                  {DEPTS_FOR_COMBO(form.country, form.project).map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div><label className="lbl">Type</label>
+                <select name="type" value={form.type} onChange={fc} className="inp">
+                  {TYPES.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
               <div><label className="lbl">Order ID</label><input name="order_id" value={form.order_id} onChange={fc} placeholder="e.g. ORD-1234" className="inp" /></div>
               <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" /></div>
-              <div><label className="lbl">First Reply At (optional)</label><input type="datetime-local" value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
+              <div><label className="lbl">First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label><input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
               <div>
                 <label className="lbl">Deadline</label>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
