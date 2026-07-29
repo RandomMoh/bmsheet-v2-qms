@@ -814,48 +814,48 @@ function ExpandedCsrRow({ u }) {
       {res.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No completed projects in this period.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20, alignItems: 'start' }}>
           {res.map(cStats => (
-            <div key={cStats.country} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)', padding: '24px', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                 <div style={{ width: 8, height: 24, background: 'var(--accent-primary)', borderRadius: 4 }}></div>
-                 <h5 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cStats.country}</h5>
+            <div key={cStats.country} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                 <div style={{ width: 6, height: 20, background: 'var(--accent-primary)', borderRadius: 3 }}></div>
+                 <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cStats.country}</h5>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', gap: 16, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)', marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 85px 95px', gap: 10, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)', marginBottom: 10 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project</span>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>1st Reply</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Last Reply/Completion</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Completion</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {cStats.projects.map(([code, ps]) => (
-                  <div key={code} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', gap: 16, alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', transition: 'border-color 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                       <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>{ps.count}</span>
-                       <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={code}>{code}</span>
+                  <div key={code} style={{ display: 'grid', gridTemplateColumns: '1.5fr 85px 95px', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', transition: 'border-color 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                       <span style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>{ps.count}</span>
+                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-main)', wordBreak: 'break-word', lineHeight: 1.25 }} title={code}>{code}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
                        {ps.firstCount > 0 ? (
                          <>
-                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--status-info)', flexShrink: 0 }}></div>
-                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 6, borderRadius: 4, overflow: 'hidden' }}>
-                             <div style={{ width: `${Math.min(100, (ps.firstMins / ps.firstCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-info)', borderRadius: 4 }}></div>
+                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--status-info)', flexShrink: 0 }}></div>
+                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 5, borderRadius: 3, overflow: 'hidden', minWidth: 12 }}>
+                             <div style={{ width: `${Math.min(100, (ps.firstMins / ps.firstCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-info)', borderRadius: 3 }}></div>
                            </div>
-                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', width: 45, textAlign: 'right' }}>{durStr(ps.firstMins / ps.firstCount)}</span>
+                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>{durStr(ps.firstMins / ps.firstCount)}</span>
                          </>
                        ) : (
                          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
                        )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
                        {ps.lastCount > 0 ? (
                          <>
-                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--status-success)', flexShrink: 0 }}></div>
-                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 6, borderRadius: 4, overflow: 'hidden' }}>
-                             <div style={{ width: `${Math.min(100, (ps.lastMins / ps.lastCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-success)', borderRadius: 4 }}></div>
+                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--status-success)', flexShrink: 0 }}></div>
+                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 5, borderRadius: 3, overflow: 'hidden', minWidth: 12 }}>
+                             <div style={{ width: `${Math.min(100, (ps.lastMins / ps.lastCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-success)', borderRadius: 3 }}></div>
                            </div>
-                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', width: 45, textAlign: 'right' }}>{durStr(ps.lastMins / ps.lastCount)}</span>
+                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>{durStr(ps.lastMins / ps.lastCount)}</span>
                          </>
                        ) : (
                          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
