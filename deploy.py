@@ -9,7 +9,7 @@ print(f"Running command: {cmd}")
 child = pexpect.spawn(cmd, encoding='utf-8')
 
 # Expect the password prompt or EOF
-idx = child.expect(['assword:', pexpect.EOF, pexpect.TIMEOUT], timeout=30)
+idx = child.expect(['assword:', pexpect.EOF, pexpect.TIMEOUT], timeout=300)
 if idx == 0:
     print("Sending password...")
     child.sendline('Bm!v2@#456&*()')

@@ -1585,14 +1585,14 @@ export default function CSRPortal() {
 
           {/* ── DATA TABLE ── */}
           {['current', 'issue', 'done'].includes(section) && (
-            <div className="panel fade-up">
+            <div className="panel fade-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               {loading ? (
                 <div style={{ height: 256, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--text-faint)' }}>
                   <div className="spinner" style={{ width: 20, height: 20, border: '2px solid var(--border-strong)', borderTopColor: 'var(--text-main)', borderRadius: '50%' }} />
                   <span style={{ fontSize: 13 }}>Loading…</span>
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
+                <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
                   <table className="tbl">
                     <thead><tr>
                       {section === 'current' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Deadline','1st Reply','Entered By'].map(h => <th key={h}>{h}</th>)}
@@ -1688,17 +1688,17 @@ export default function CSRPortal() {
                   </table>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ── PAGINATION ── */}
-          {['current', 'issue', 'done'].includes(section) && !loading && totalPages > 1 && (
-            <div className="pager">
-              <span className="pager-info">Page {page} of {totalPages}</span>
-              <div className="pager-btns">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-ghost btn-sm"><Icon paths={IC.chevL} size={12} /> Prev</button>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn btn-ghost btn-sm">Next <Icon paths={IC.chevR} size={12} /></button>
-              </div>
+              
+              {/* ── PAGINATION ── */}
+              {!loading && totalPages > 1 && (
+                <div className="pager" style={{ padding: '12px 24px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-panel)' }}>
+                  <span className="pager-info">Page {page} of {totalPages}</span>
+                  <div className="pager-btns">
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-ghost btn-sm"><Icon paths={IC.chevL} size={12} /> Prev</button>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn btn-ghost btn-sm">Next <Icon paths={IC.chevR} size={12} /></button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
