@@ -222,41 +222,7 @@ function initUserStats(byUser, name) {
 }
 
 function classifyOrder(o, byUser, firstOwner, completionOwner) {
-  const cName = completionOwner || 'Unassigned'
-  initUserStats(byUser, cName)
-  const cU = byUser[cName]
-  cU.total++
-  cU.orders.push(o)
-  const type = (o.type || '').toLowerCase()
-  if (type.includes('new')) cU.newOrd++
-  else if (type.includes('amend')) cU.amend++
-  const dept = o.department || 'Unknown'
-  const proj = o.project_name || 'Unknown'
-  const tp = o.type || 'Unknown'
-  const pd = `${proj} - ${dept}`
-  cU.projDepts[pd] = (cU.projDepts[pd] || 0) + 1
-  cU.types[tp] = (cU.types[tp] || 0) + 1
-
-  const dm = diffMin(o['query-received_datetime'], o.query_done)
-  if (dm !== null) {
-    if (dm <= 45) cU.done_45m++
-    else if (dm <= 120) cU.done_2h++
-    else if (dm <= 240) cU.done_4h++
-    else if (dm <= 480) cU.done_8h++
-    else if (dm <= 720) cU.done_12h++
-    else cU.done_over12++
-  }
-
-  const fName = firstOwner || 'Unassigned'
-  initUserStats(byUser, fName)
-  const fU = byUser[fName]
-  const rm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
-  if (!o['query-first-reply_datetime'] || rm === null) fU.reply_na++
-  else if (rm <= 5) fU.reply_5++
-  else if (rm <= 15) fU.reply_15++
-  else if (rm <= 30) fU.reply_30++
-  else if (rm <= 60) fU.reply_1h++
-  else fU.reply_over1h++
+  processOrderForUserStats(o, byUser, [])
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL
@@ -342,83 +308,122 @@ function QueryTimeline({ order, onClose }) {
   )
 }
 
-function buildReport(orders, completedByNames) {
-  const byUser = {}
-  orders.filter(o => o.query_done).forEach(o => {
-    let enterer = (o.qname || '').trim()
-    if (!enterer) enterer = 'Unassigned'
-    else if (completedByNames && completedByNames.length) {
-      const match = completedByNames.find(c => c.values && c.values.includes(enterer))
-      if (match) enterer = match.display
-    }
+function processOrderForUserStats(o, byUser, completedByNames) {
+  let enterer = (o.qname || '').trim()
+  if (!enterer) enterer = 'Unassigned'
+  else if (completedByNames && completedByNames.length) {
+    const match = completedByNames.find(c => c.values && c.values.includes(enterer))
+    if (match) enterer = match.display
+  }
 
-    let completer = (o.completed_by || '').trim()
-    if (!completer) completer = 'Unassigned'
+  let completer = (o.completed_by || '').trim()
+  if (!completer) completer = 'Unassigned'
+  else if (completedByNames && completedByNames.length) {
+    const match = completedByNames.find(c => c.values && c.values.includes(completer))
+    if (match) completer = match.display
+  }
 
-    const isSlack = (o.communication_medium === 'Slack' || (o.qname || '').toLowerCase().includes('slack'))
-    
-    const completionOwner = isSlack ? completer : enterer
-    const firstOwner = enterer
+  const entererLower = enterer.toLowerCase()
+  const mediumLower = (o.communication_medium || '').toLowerCase()
+  const isBotEntered = entererLower.includes('bot') || entererLower.includes('slack') || mediumLower === 'slack'
 
-    classifyOrder(o, byUser, firstOwner, completionOwner)
+  const completerLower = completer.toLowerCase()
+  const isBotCompleted = completerLower.includes('bot') || completerLower.includes('slack')
 
-    if (!isSlack) {
-      initUserStats(byUser, enterer)
-      byUser[enterer].enteredTotal++
-    }
+  const isDone = !!(o.query_done || (o.status && o.status.toLowerCase() === 'completed'))
+
+  // 1. Manually Entered credit (only if entered by a human, not bot)
+  if (!isBotEntered && enterer !== 'Unassigned') {
+    initUserStats(byUser, enterer)
+    byUser[enterer].enteredTotal++
+  }
+
+  // 2. Completion / Done credit (goes to whoever completed it)
+  if (isDone && completer !== 'Unassigned') {
     initUserStats(byUser, completer)
     byUser[completer].completedTotal++
-    if (isSlack) {
-      byUser[completer].botCompleted++
+    // If entered by Slack Bot, but completed by human CSR, give CSR completion credit + track botAssigned
+    if (isBotEntered && !isBotCompleted) {
       byUser[completer].botAssigned++
     }
+    // If completed BY THE BOT ITSELF:
+    if (isBotCompleted) {
+      byUser[completer].botCompleted++
+    }
+  }
+
+  // 3. Pending credit
+  if (!isDone) {
+    if (completer !== 'Unassigned') {
+      initUserStats(byUser, completer)
+      byUser[completer].pending++
+      if (isBotEntered) byUser[completer].botAssigned++
+    } else if (enterer !== 'Unassigned' && !isBotEntered) {
+      initUserStats(byUser, enterer)
+      byUser[enterer].pending++
+    }
+  }
+
+  // 4. Involved users for Total Handled & Breakdown metrics
+  const involvedUsers = new Set()
+  if (enterer !== 'Unassigned' && !isBotEntered) involvedUsers.add(enterer)
+  if (completer !== 'Unassigned') involvedUsers.add(completer)
+
+  const type = (o.type || '').toLowerCase()
+  const dept = o.department || 'Unknown'
+  const proj = o.project_name || 'Unknown'
+  const tp = o.type || 'Unknown'
+  const pd = `${proj} - ${dept}`
+
+  involvedUsers.forEach(userName => {
+    initUserStats(byUser, userName)
+    const u = byUser[userName]
+    
+    if (!u.orders.some(existing => existing.id === o.id)) {
+      u.orders.push(o)
+      u.total++
+      if (type.includes('new')) u.newOrd++
+      else if (type.includes('amend')) u.amend++
+      u.projDepts[pd] = (u.projDepts[pd] || 0) + 1
+      u.types[tp] = (u.types[tp] || 0) + 1
+    }
+
+    if (isDone && userName === completer) {
+      const dm = diffMin(o['query-received_datetime'], o.query_done)
+      if (dm !== null) {
+        if (dm <= 45) u.done_45m++
+        else if (dm <= 120) u.done_2h++
+        else if (dm <= 240) u.done_4h++
+        else if (dm <= 480) u.done_8h++
+        else if (dm <= 720) u.done_12h++
+        else u.done_over12++
+      }
+    }
+    if (userName === enterer) {
+      const rm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+      if (!o['query-first-reply_datetime'] || rm === null) u.reply_na++
+      else if (rm <= 5) u.reply_5++
+      else if (rm <= 15) u.reply_15++
+      else if (rm <= 30) u.reply_30++
+      else if (rm <= 60) u.reply_1h++
+      else u.reply_over1h++
+    }
+  })
+}
+
+function buildReport(orders, completedByNames) {
+  const byUser = {}
+  orders.filter(o => o.query_done || (o.status && o.status.toLowerCase() === 'completed')).forEach(o => {
+    processOrderForUserStats(o, byUser, completedByNames)
   })
   return byUser
 }
 
 function buildReportWithPending(orders, completedByNames) {
   const byUser = {}
-
   orders.forEach(o => {
-    let enterer = (o.qname || '').trim()
-    if (!enterer) enterer = 'Unassigned'
-    else if (completedByNames && completedByNames.length) {
-      const match = completedByNames.find(c => c.values && c.values.includes(enterer))
-      if (match) enterer = match.display
-    }
-
-    let completer = (o.completed_by || '').trim()
-    if (!completer) completer = 'Unassigned'
-
-    const isSlack = (o.communication_medium === 'Slack' || (o.qname || '').toLowerCase().includes('slack'))
-    const completionOwner = isSlack ? completer : enterer
-    const firstOwner = enterer
-
-    initUserStats(byUser, completionOwner)
-    initUserStats(byUser, enterer)
-    initUserStats(byUser, completer)
-
-    byUser[enterer].enteredTotal++
-
-    const isDone = o.query_done || (o.status && o.status.toLowerCase() === 'completed')
-
-    if (isDone) {
-      classifyOrder(o, byUser, firstOwner, completionOwner)
-      byUser[completer].completedTotal++
-      if (isSlack) {
-        byUser[completer].botCompleted++
-        byUser[completer].botAssigned++
-      }
-    } else {
-      if (completer !== 'Unassigned') {
-        byUser[completer].pending++
-        if (isSlack) byUser[completer].botAssigned++
-      } else {
-        byUser[enterer].pending++
-      }
-    }
+    processOrderForUserStats(o, byUser, completedByNames)
   })
-  
   return byUser
 }
 
