@@ -40,22 +40,27 @@ $schedule = [
     ]
 ];
 
-// Fetch active sessions from active_sessions table (strictly last 10 minutes)
+// Fetch active sessions from active_sessions table
 $active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname, u.dusername 
     FROM active_sessions a 
     LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username) OR LOWER(u.dname) = LOWER(a.username))
-    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
     ORDER BY a.last_active DESC");
 
 $active_users = [];
 $active_users_list = [];
 $seen_users = [];
+$nowTime = time(); // Current PKT epoch timestamp
 
 if ($active_res) {
     while ($r = mysqli_fetch_assoc($active_res)) {
         $lastAct = $r['last_active'];
+        $lastActTime = strtotime($lastAct);
         
-        // Map all name/username variants to active_users map
+        // Only count session as active if last_active ping was within last 10 minutes (600s)
+        if (($nowTime - $lastActTime) > 600 || $lastActTime > ($nowTime + 300)) {
+            continue;
+        }
+
         if (!empty($r['username'])) $active_users[strtolower($r['username'])] = $lastAct;
         if (!empty($r['dusername'])) $active_users[strtolower($r['dusername'])] = $lastAct;
         if (!empty($r['dname'])) $active_users[strtolower($r['dname'])] = $lastAct;
