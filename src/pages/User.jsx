@@ -1498,35 +1498,35 @@ export default function CSRPortal() {
                       </div>
                       
                       <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 16px', minWidth: 0 }}>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Total Work: All queries this person entered by hand or finished today">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total Handled</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Manually Entered: Queries this person typed into the system by hand">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Entered</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Finished Queries: Queries this person completed and marked done">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Done</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Logged: Queries that came from Slack automatically for this person">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botAssigned}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Entered</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Finished: Queries completed automatically by the bot">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Done</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Still Open: Queries currently open or waiting to be finished">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Fresh New Orders: Brand new query tickets logged">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New Orders</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center' }} title="Revisions / Corrections: Changes or fix-up requests on existing orders">
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Amends</div>
                         </div>
