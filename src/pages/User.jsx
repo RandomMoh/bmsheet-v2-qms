@@ -193,12 +193,22 @@ function parseDurH(s) {
   if (s.includes('h')) { const [hr] = s.split('h'); h += parseInt(hr) }
   return h
 }
+const COUNTRY_SHORT = {
+  'Australia': 'AUS',
+  'South Africa': 'SA',
+  'EU (Vietnam)': 'VIET',
+  'Canada/Other': 'CANADA/USA',
+  'UK': 'UK'
+};
+
 const getCountryForProject = (proj, dept) => {
   if (!proj || !dept || proj === 'Unknown' || dept === 'Unknown') return '—'
   const pLower = String(proj).trim().toLowerCase();
   const dLower = String(dept).trim().toLowerCase();
   for (const [country, items] of Object.entries(COUNTRY_MAP)) {
-    if (items.some(i => i.p.toLowerCase() === pLower && i.d.toLowerCase() === dLower)) return country;
+    if (items.some(i => i.p.toLowerCase() === pLower && i.d.toLowerCase() === dLower)) {
+      return COUNTRY_SHORT[country] || country;
+    }
   }
   return '—';
 }
