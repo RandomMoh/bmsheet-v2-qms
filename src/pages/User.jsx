@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
 import SlackThreadViewer from '../SlackThreadViewer'
-import { User as UserIcon } from 'lucide-react'
+import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap } from 'lucide-react'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -887,58 +887,80 @@ function CsrShiftsView({ API }) {
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Header Banner */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>CSR Shift Roster & Live Presence</h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-            Real-time shift tracking & online presence monitoring (Karachi / PKT)
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: 'var(--accent-glow)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Users size={22} />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600, letterSpacing: '-0.02em' }}>CSR Shift Roster & Live Presence</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
+              Real-time shift tracking & online presence monitoring (Karachi / PKT)
+            </p>
+          </div>
         </div>
+
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
             PKT: {data?.pkt_time || '—'}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>Auto-syncing every 10s</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+            <Radio size={12} /> Auto-syncing every 10s
+          </div>
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scheduled Shift Now</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-main)', marginTop: 4 }}>{stats.scheduled_now ?? '—'}</div>
+        <div className="metric m-blue" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20, transition: 'all 0.25s ease' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scheduled Shift Now</div>
+            <Clock size={18} style={{ color: 'var(--text-faint)' }} />
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', marginTop: 6, letterSpacing: '-0.03em' }}>{stats.scheduled_now ?? '—'}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>CSRs on duty currently</div>
         </div>
 
-        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Online In Shift 🟢</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981', marginTop: 4 }}>{stats.online_in_shift ?? '—'}</div>
-          <div style={{ fontSize: 12, color: '#10b981', marginTop: 2 }}>Working & active</div>
+        <div className="metric m-teal" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20, transition: 'all 0.25s ease' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Online In Shift</div>
+            <UserCheck size={18} style={{ color: '#10b981' }} />
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#10b981', marginTop: 6, letterSpacing: '-0.03em' }}>{stats.online_in_shift ?? '—'}</div>
+          <div style={{ fontSize: 12, color: '#10b981', marginTop: 2, fontWeight: 500 }}>Working & active</div>
         </div>
 
-        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Offline In Shift ⚠️</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-main)'), marginTop: 4 }}>{stats.offline_in_shift ?? '—'}</div>
-          <div style={{ fontSize: 12, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-muted)'), marginTop: 2 }}>
+        <div className="metric m-amber" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20, transition: 'all 0.25s ease' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Offline In Shift</div>
+            <AlertTriangle size={18} style={{ color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-faint)') }} />
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-main)'), marginTop: 6, letterSpacing: '-0.03em' }}>{stats.offline_in_shift ?? '—'}</div>
+          <div style={{ fontSize: 12, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-muted)'), marginTop: 2, fontWeight: 500 }}>
             {stats.offline_in_shift > 0 ? 'Missing / Inactive' : 'All scheduled active'}
           </div>
         </div>
 
-        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Active Users</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent-primary)', marginTop: 4 }}>{stats.online_total ?? '—'}</div>
+        <div className="metric m-teal" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20, transition: 'all 0.25s ease' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Active Users</div>
+            <Activity size={18} style={{ color: 'var(--accent-primary)' }} />
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--accent-primary)', marginTop: 6, letterSpacing: '-0.03em' }}>{stats.online_total ?? '—'}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Logged into QMS overall</div>
         </div>
       </div>
 
-      {/* Currently Active Users List Box */}
-      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      {/* Active Users Roster Card */}
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px 22px', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
+            <Activity size={16} style={{ color: '#10b981' }} />
             Currently Logged-in / Active Users ({data?.active_users_list?.length || 0})
           </h3>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Includes all active accounts (Management, Admins, Dev, CSRs)</span>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Includes all active accounts (Management, Admins, Dev, CSRs)</span>
         </div>
 
         {(!data?.active_users_list || data.active_users_list.length === 0) ? (
@@ -946,8 +968,8 @@ function CsrShiftsView({ API }) {
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {data.active_users_list.map(u => (
-              <div key={u.username} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></div>
+              <div key={u.username} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', transition: 'border-color 0.2s ease' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px rgba(16,185,129,0.5)' }}></span>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     {u.displayName}
@@ -961,19 +983,24 @@ function CsrShiftsView({ API }) {
         )}
       </div>
 
+      {/* 3 Shift Columns */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         {shiftKeys.map(sKey => {
           const shift = schedule[sKey] || { label: '', csrs: [], isActive: false }
           const isActive = shift.isActive
           return (
-            <div key={sKey} style={{ background: 'var(--bg-panel)', border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: isActive ? '0 0 16px rgba(45,212,191,0.15)' : 'var(--shadow-sm)' }}>
+            <div key={sKey} style={{ background: 'var(--bg-panel)', border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: isActive ? '0 0 20px rgba(45,212,191,0.12)' : 'var(--shadow-sm)', transition: 'all 0.25s ease' }}>
               <div style={{ padding: '16px 20px', background: isActive ? 'rgba(45,212,191,0.08)' : 'var(--bg-sunken)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: isActive ? 'var(--accent-primary)' : 'var(--text-main)' }}>{shift.label}</h3>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: isActive ? 'var(--accent-primary)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Clock size={16} /> {shift.label}
+                  </h3>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{shift.csrs?.length || 0} CSRs assigned</div>
                 </div>
                 {isActive && (
-                  <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 12, background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, letterSpacing: '0.05em' }}>ACTIVE SHIFT</span>
+                  <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 12, background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Radio size={10} /> ACTIVE SHIFT
+                  </span>
                 )}
               </div>
 
@@ -983,33 +1010,34 @@ function CsrShiftsView({ API }) {
                 ) : (shift.csrs || []).map(c => {
                   let badgeBg = 'var(--bg-hover)'
                   let badgeColor = 'var(--text-muted)'
-                  let dotColor = 'var(--border-strong)'
                   let statusText = 'Offline'
+                  let StatusIcon = XCircle
 
                   if (c.statusState === 'online_in_shift') {
                     badgeBg = 'rgba(16, 185, 129, 0.12)'
                     badgeColor = '#10b981'
-                    dotColor = '#10b981'
                     statusText = 'Online'
+                    StatusIcon = CheckCircle2
                   } else if (c.statusState === 'offline_in_shift') {
                     badgeBg = 'rgba(239, 68, 68, 0.12)'
                     badgeColor = '#ef4444'
-                    dotColor = '#ef4444'
                     statusText = 'Offline'
+                    StatusIcon = XCircle
                   } else if (c.statusState === 'online_off_duty') {
                     badgeBg = 'rgba(59, 130, 246, 0.12)'
                     badgeColor = '#3b82f6'
-                    dotColor = '#3b82f6'
                     statusText = 'Active (Off-duty)'
+                    StatusIcon = Zap
                   }
 
                   return (
-                    <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: badgeBg, borderRadius: 'var(--radius-md)', border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle)'}` }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)' }}>
+                    <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: badgeBg, borderRadius: 'var(--radius-md)', border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle)'}`, transition: 'all 0.2s ease' }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <UserIcon size={14} style={{ color: badgeColor, opacity: 0.8 }} />
                         {c.name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: badgeColor }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, display: 'inline-block', boxShadow: c.isOnline ? `0 0 6px ${dotColor}` : 'none' }}></span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: badgeColor }}>
+                        <StatusIcon size={13} />
                         {statusText}
                       </div>
                     </div>
