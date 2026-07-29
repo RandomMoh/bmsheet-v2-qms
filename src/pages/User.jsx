@@ -881,13 +881,15 @@ function CsrShiftsView({ API }) {
 
   const data = shiftsQuery.data
   const stats = data?.stats || {}
-  const schedule = data?.schedule || []
+  const schedule = data?.schedule || {}
+
+  const shiftKeys = ['shift1', 'shift2', 'shift3']
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>CSR Shift Schedule & Live Presence</h2>
+          <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>CSR Shift Roster & Live Presence</h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
             Real-time shift tracking & online presence monitoring (Karachi / PKT)
           </p>
@@ -929,95 +931,64 @@ function CsrShiftsView({ API }) {
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>BM CS Level 1 - Countrywise Schedule</h3>
-          <div style={{ display: 'flex', gap: 16, fontSize: 11, fontWeight: 500 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></span> Online in Shift</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></span> Offline in Shift</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }}></span> Active (Off-duty)</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border-strong)' }}></span> Offline</span>
-          </div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        {shiftKeys.map(sKey => {
+          const shift = schedule[sKey] || { label: '', csrs: [], isActive: false }
+          const isActive = shift.isActive
+          return (
+            <div key={sKey} style={{ background: 'var(--bg-panel)', border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: isActive ? '0 0 16px rgba(45,212,191,0.15)' : 'var(--shadow-sm)' }}>
+              <div style={{ padding: '16px 20px', background: isActive ? 'rgba(45,212,191,0.08)' : 'var(--bg-sunken)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: isActive ? 'var(--accent-primary)' : 'var(--text-main)' }}>{shift.label}</h3>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{shift.csrs?.length || 0} CSRs assigned</div>
+                </div>
+                {isActive && (
+                  <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 12, background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, letterSpacing: '0.05em' }}>ACTIVE SHIFT</span>
+                )}
+              </div>
 
-        {shiftsQuery.isLoading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading schedule status...</div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-panel)', borderBottom: '2px solid var(--border-subtle)', textAlign: 'left' }}>
-                <th style={{ padding: '12px 16px', width: '18%', color: 'var(--text-muted)', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Country</th>
-                <th style={{ padding: '12px 16px', width: '27%', color: data?.shift_info?.shift1?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift1?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
-                  7am till 4pm {data?.shift_info?.shift1?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
-                </th>
-                <th style={{ padding: '12px 16px', width: '27%', color: data?.shift_info?.shift2?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift2?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
-                  12pm till 9pm {data?.shift_info?.shift2?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
-                </th>
-                <th style={{ padding: '12px 16px', width: '28%', color: data?.shift_info?.shift3?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift3?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
-                  10pm till 7am {data?.shift_info?.shift3?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((row, idx) => (
-                <tr key={row.country} style={{ borderBottom: '1px solid var(--border-subtle)', background: idx % 2 === 0 ? 'var(--bg-panel)' : 'var(--bg-sunken)' }}>
-                  <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-main)' }}>{row.country}</td>
-                  {['shift1', 'shift2', 'shift3'].map(sKey => {
-                    const shiftData = row.shifts[sKey]
-                    const isActive = shiftData.isActive
-                    return (
-                      <td key={sKey} style={{ padding: '12px 16px', verticalAlign: 'top', background: isActive ? 'rgba(45,212,191,0.02)' : 'transparent' }}>
-                        {shiftData.csrs.length === 0 ? (
-                          <span style={{ color: 'var(--text-faint)', fontSize: 12, fontStyle: 'italic' }}>—</span>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {shiftData.csrs.map(c => {
-                              let badgeBg = 'var(--bg-hover)'
-                              let badgeColor = 'var(--text-muted)'
-                              let dotColor = 'var(--border-strong)'
-                              let statusText = 'Offline'
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {shiftsQuery.isLoading ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+                ) : (shift.csrs || []).map(c => {
+                  let badgeBg = 'var(--bg-hover)'
+                  let badgeColor = 'var(--text-muted)'
+                  let dotColor = 'var(--border-strong)'
+                  let statusText = 'Offline'
 
-                              if (c.statusState === 'online_in_shift') {
-                                badgeBg = 'rgba(16, 185, 129, 0.12)'
-                                badgeColor = '#10b981'
-                                dotColor = '#10b981'
-                                statusText = 'Online'
-                              } else if (c.statusState === 'offline_in_shift') {
-                                badgeBg = 'rgba(239, 68, 68, 0.12)'
-                                badgeColor = '#ef4444'
-                                dotColor = '#ef4444'
-                                statusText = 'Offline'
-                              } else if (c.statusState === 'online_off_duty') {
-                                badgeBg = 'rgba(59, 130, 246, 0.12)'
-                                badgeColor = '#3b82f6'
-                                dotColor = '#3b82f6'
-                                statusText = 'Active (Off-duty)'
-                              }
+                  if (c.statusState === 'online_in_shift') {
+                    badgeBg = 'rgba(16, 185, 129, 0.12)'
+                    badgeColor = '#10b981'
+                    dotColor = '#10b981'
+                    statusText = 'Online'
+                  } else if (c.statusState === 'offline_in_shift') {
+                    badgeBg = 'rgba(239, 68, 68, 0.12)'
+                    badgeColor = '#ef4444'
+                    dotColor = '#ef4444'
+                    statusText = 'Offline'
+                  } else if (c.statusState === 'online_off_duty') {
+                    badgeBg = 'rgba(59, 130, 246, 0.12)'
+                    badgeColor = '#3b82f6'
+                    dotColor = '#3b82f6'
+                    statusText = 'Active (Off-duty)'
+                  }
 
-                              return (
-                                <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: badgeBg, borderRadius: 6, border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'transparent'}` }}>
-                                  <div>
-                                    <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-main)' }}>
-                                      {c.name} {c.note && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>({c.note})</span>}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: badgeColor }}>
-                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'inline-block' }}></span>
-                                    {statusText}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                  return (
+                    <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: badgeBg, borderRadius: 'var(--radius-md)', border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle)'}` }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)' }}>
+                        {c.name}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: badgeColor }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, display: 'inline-block', boxShadow: c.isOnline ? `0 0 6px ${dotColor}` : 'none' }}></span>
+                        {statusText}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
