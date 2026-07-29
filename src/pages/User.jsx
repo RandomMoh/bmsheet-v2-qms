@@ -869,6 +869,160 @@ function ExpandedCsrRow({ u }) {
   )
 }
 
+function CsrShiftsView({ API }) {
+  const shiftsQuery = useQuery({
+    queryKey: ['csr_shifts'],
+    queryFn: async () => {
+      const res = await fetch(`${API}/get-csr-shifts.php`)
+      return res.json()
+    },
+    refetchInterval: 10000
+  })
+
+  const data = shiftsQuery.data
+  const stats = data?.stats || {}
+  const schedule = data?.schedule || []
+
+  return (
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-main)', fontWeight: 600 }}>CSR Shift Schedule & Live Presence</h2>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
+            Real-time shift tracking & online presence monitoring (Karachi / PKT)
+          </p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
+            PKT: {data?.pkt_time || '—'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>Auto-syncing every 10s</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scheduled Shift Now</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-main)', marginTop: 4 }}>{stats.scheduled_now ?? '—'}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>CSRs on duty currently</div>
+        </div>
+
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Online In Shift 🟢</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#10b981', marginTop: 4 }}>{stats.online_in_shift ?? '—'}</div>
+          <div style={{ fontSize: 12, color: '#10b981', marginTop: 2 }}>Working & active</div>
+        </div>
+
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Offline In Shift ⚠️</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-main)'), marginTop: 4 }}>{stats.offline_in_shift ?? '—'}</div>
+          <div style={{ fontSize: 12, color: (stats.offline_in_shift > 0 ? '#ef4444' : 'var(--text-muted)'), marginTop: 2 }}>
+            {stats.offline_in_shift > 0 ? 'Missing / Inactive' : 'All scheduled active'}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Active Users</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent-primary)', marginTop: 4 }}>{stats.online_total ?? '—'}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Logged into QMS overall</div>
+        </div>
+      </div>
+
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>BM CS Level 1 - Countrywise Schedule</h3>
+          <div style={{ display: 'flex', gap: 16, fontSize: 11, fontWeight: 500 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></span> Online in Shift</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></span> Offline in Shift</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }}></span> Active (Off-duty)</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border-strong)' }}></span> Offline</span>
+          </div>
+        </div>
+
+        {shiftsQuery.isLoading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading schedule status...</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-panel)', borderBottom: '2px solid var(--border-subtle)', textAlign: 'left' }}>
+                <th style={{ padding: '12px 16px', width: '18%', color: 'var(--text-muted)', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Country</th>
+                <th style={{ padding: '12px 16px', width: '27%', color: data?.shift_info?.shift1?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift1?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
+                  7am till 4pm {data?.shift_info?.shift1?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
+                </th>
+                <th style={{ padding: '12px 16px', width: '27%', color: data?.shift_info?.shift2?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift2?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
+                  12pm till 9pm {data?.shift_info?.shift2?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
+                </th>
+                <th style={{ padding: '12px 16px', width: '28%', color: data?.shift_info?.shift3?.active ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, background: data?.shift_info?.shift3?.active ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
+                  10pm till 7am {data?.shift_info?.shift3?.active && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 10, background: 'var(--accent-primary)', color: '#fff', marginLeft: 6 }}>ACTIVE NOW</span>}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedule.map((row, idx) => (
+                <tr key={row.country} style={{ borderBottom: '1px solid var(--border-subtle)', background: idx % 2 === 0 ? 'var(--bg-panel)' : 'var(--bg-sunken)' }}>
+                  <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-main)' }}>{row.country}</td>
+                  {['shift1', 'shift2', 'shift3'].map(sKey => {
+                    const shiftData = row.shifts[sKey]
+                    const isActive = shiftData.isActive
+                    return (
+                      <td key={sKey} style={{ padding: '12px 16px', verticalAlign: 'top', background: isActive ? 'rgba(45,212,191,0.02)' : 'transparent' }}>
+                        {shiftData.csrs.length === 0 ? (
+                          <span style={{ color: 'var(--text-faint)', fontSize: 12, fontStyle: 'italic' }}>—</span>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {shiftData.csrs.map(c => {
+                              let badgeBg = 'var(--bg-hover)'
+                              let badgeColor = 'var(--text-muted)'
+                              let dotColor = 'var(--border-strong)'
+                              let statusText = 'Offline'
+
+                              if (c.statusState === 'online_in_shift') {
+                                badgeBg = 'rgba(16, 185, 129, 0.12)'
+                                badgeColor = '#10b981'
+                                dotColor = '#10b981'
+                                statusText = 'Online'
+                              } else if (c.statusState === 'offline_in_shift') {
+                                badgeBg = 'rgba(239, 68, 68, 0.12)'
+                                badgeColor = '#ef4444'
+                                dotColor = '#ef4444'
+                                statusText = 'Offline'
+                              } else if (c.statusState === 'online_off_duty') {
+                                badgeBg = 'rgba(59, 130, 246, 0.12)'
+                                badgeColor = '#3b82f6'
+                                dotColor = '#3b82f6'
+                                statusText = 'Active (Off-duty)'
+                              }
+
+                              return (
+                                <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: badgeBg, borderRadius: 6, border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'transparent'}` }}>
+                                  <div>
+                                    <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-main)' }}>
+                                      {c.name} {c.note && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>({c.note})</span>}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: badgeColor }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'inline-block' }}></span>
+                                    {statusText}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function CSRPortal() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -1357,7 +1511,36 @@ export default function CSRPortal() {
     { l: 'Done Today', n: stats.done, sub: `${stats.done_new} new · ${stats.done_amend} amends` },
     { l: 'Pending', n: stats.pending, sub: `${stats.pending_new} new · ${stats.pending_amend} amends` },
   ] : []
-  const SECTION_TITLES = { current: 'Current Queue', issue: 'Emailed / Issue', done: 'Done Queries', reports: 'Reports', profile: 'Profile' }
+  const isManager = displayRole !== 'CSR'
+  const navGroups = useMemo(() => [
+    { label: 'Workspace', items: [
+      { id: 'current', label: 'Current Queue', icon: IC.bolt },
+      { id: 'issue', label: 'Emailed / Issue', icon: IC.mail },
+      { id: 'done', label: 'Done Queries', icon: IC.check },
+    ]},
+    { label: 'Analytics', items: [
+      { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
+      ...(isManager ? [{ id: 'csr_shifts', label: 'CSR Shifts & Live Status', icon: IC.user }] : []),
+      { id: 'reports', label: 'Legacy Reports', icon: IC.chart }
+    ] },
+    { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: IC.user }] },
+  ], [isManager])
+
+  useEffect(() => {
+    if (!user) return
+    const ping = () => {
+      fetch(`${API}/heartbeat.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name, userRole: displayRole })
+      }).catch(() => {})
+    }
+    ping()
+    const timer = setInterval(ping, 60000)
+    return () => clearInterval(timer)
+  }, [user, displayRole])
+
+  const SECTION_TITLES = { current: 'Current Queue', issue: 'Emailed / Issue', done: 'Done Queries', reports: 'Reports', profile: 'Profile', qms_dashboard: 'Performance Dashboard', csr_shifts: 'CSR Shifts & Live Presence' }
   const sectionBadge = id => id === 'current' ? curOrds.length : id === 'issue' ? issOrds.length : id === 'done' ? doneOrds.length : null
 
   return (
@@ -1378,7 +1561,7 @@ export default function CSRPortal() {
           </div>
         </div>
         <nav className="sb-nav">
-          {NAV_GROUPS.map(g => (
+          {navGroups.map(g => (
             <div className="sb-group" key={g.label}>
               <div className="sb-group-label">{g.label}</div>
               {g.items.map(n => {
@@ -1563,6 +1746,8 @@ export default function CSRPortal() {
               </div>
             </div>
           )}
+
+          {section === 'csr_shifts' && <CsrShiftsView API={API} />}
 
           {/* ── STAT CARDS ── */}
           {section === 'current' && CARDS.length > 0 && (

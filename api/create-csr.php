@@ -32,6 +32,7 @@ if ($password !== $config['login_maker_password']) {
 $base_name = trim(preg_replace('/\bcsr\b/i', '', $name));
 $username = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($base_name)));
 
+// Generate a strong 8-character password
 $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
 $userPassword = '';
 for ($i = 0; $i < 8; $i++) {
@@ -48,16 +49,17 @@ if ($res->num_rows > 0) {
 }
 $stmt->close();
 
-$role = 'user'; // Basic CSR
+// Hash the password for dpassword, store plain in plain_password
+$hashedPassword = password_hash($userPassword, PASSWORD_BCRYPT);
 
-$stmt = $conn->prepare("INSERT INTO user (dusername, dname, dpassword, dstatus) VALUES (?, ?, ?, '1')");
-$stmt->bind_param("sss", $username, $name, $userPassword);
+$stmt = $conn->prepare("INSERT INTO user (dusername, dname, dpassword, plain_password, dstatus, role) VALUES (?, ?, ?, ?, '1', 'CSR')");
+$stmt->bind_param("ssss", $username, $name, $hashedPassword, $userPassword);
 
 if ($stmt->execute()) {
     echo json_encode([
         'status' => 'success',
         'username' => $username,
-        'password' => $userPassword
+        'password' => $userPassword  // Return plain text so it can be sent to the new CSR
     ]);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Database error']);
