@@ -93,7 +93,9 @@
 }
 .sb-badge-teal { background:var(--accent-glow); color:var(--accent-primary); border:1px solid var(--accent-primary); }
 .sb-badge-amber { background:var(--status-warning-bg); color:var(--status-warning); border:1px solid var(--status-warning); }
-
+.sb-badge-blue { background:var(--status-info-bg); color:var(--status-info); border:1px solid var(--status-info); }
+.sb-badge-emerald { background:var(--status-success-bg); color:var(--status-success); border:1px solid var(--status-success); }
+.sb-badge-critical { background:var(--status-danger-bg); color:var(--status-danger); border:1px solid var(--status-danger); animation: pulse 1s infinite; }
 .sb-foot {
   padding:16px; border-top:1px solid var(--border-subtle);
   display:flex; align-items:center; gap:10px;

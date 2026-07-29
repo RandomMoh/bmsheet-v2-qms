@@ -1346,7 +1346,7 @@ export default function CSRPortal() {
     { l: 'Pending', n: stats.pending, sub: `${stats.pending_new} new · ${stats.pending_amend} amends` },
   ] : []
   const SECTION_TITLES = { current: 'Current Queue', issue: 'Emailed / Issue', done: 'Done Queries', reports: 'Reports', profile: 'Profile' }
-  const sectionBadge = id => id === 'current' ? curOrds.length : id === 'issue' ? issOrds.length : null
+  const sectionBadge = id => id === 'current' ? curOrds.length : id === 'issue' ? issOrds.length : id === 'done' ? doneOrds.length : null
 
   return (
     <div className="shell fade-in">
@@ -1378,7 +1378,7 @@ export default function CSRPortal() {
                     className={`sb-link${section === n.id ? ' active' : ''}`}>
                     <Icon paths={n.icon} size={14} style={{ color: section === n.id ? 'var(--accent-primary)' : 'var(--text-faint)' }} />
                     {n.label}
-                    {badge > 0 && <span className={`sb-badge ${n.id === 'issue' ? 'sb-badge-amber' : 'sb-badge-teal'}`}>{badge}</span>}
+                    {badge > 0 && <span className={`sb-badge ${n.id === 'issue' ? (badge >= 25 ? 'sb-badge-critical' : badge >= 10 ? 'sb-badge-amber' : 'sb-badge-emerald') : n.id === 'done' ? 'sb-badge-blue' : 'sb-badge-teal'}`}>{badge}</span>}
                   </button>
                 )
               })}
