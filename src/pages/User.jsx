@@ -436,8 +436,8 @@ async function exportUserPDF(u) {
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 16,
     theme: 'plain',
-    head: [['1st Reply Time', '<5m', '5-15m', '15-30m', '>30m', 'N/A']],
-    body: [['Count', u.reply_5, u.reply_15, u.reply_30, u.reply_over30, u.reply_na]],
+    head: [['1st Reply Time', '≤5m', '5-15m', '15-30m', '30m-1h', '>1h', 'N/A']],
+    body: [['Count', u.reply_5, u.reply_15, u.reply_30, u.reply_1h, u.reply_over1h, u.reply_na]],
     headStyles: { textColor: [20, 20, 20], fontSize: 8, fontStyle: 'bold', halign: 'center' },
     bodyStyles: { fontSize: 10, halign: 'center', textColor: [80, 80, 80] },
     columnStyles: { 0: { halign: 'left', fontStyle: 'bold', textColor: [120, 120, 120], fontSize: 8 } },
@@ -449,8 +449,8 @@ async function exportUserPDF(u) {
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 12,
     theme: 'plain',
-    head: [['Completion Time', '<45m', '<2h', '<6h', '<8h', '<12h', '>12h']],
-    body: [['Count', u.done_45m, u.done_2h, u.done_6h, u.done_8h, u.done_12h, u.done_over12]],
+    head: [['Completion Time', '≤45m', '≤2h', '≤4h', '≤8h', '≤12h', '>12h']],
+    body: [['Count', u.done_45m, u.done_2h, u.done_4h, u.done_8h, u.done_12h, u.done_over12]],
     headStyles: { textColor: [20, 20, 20], fontSize: 8, fontStyle: 'bold', halign: 'center' },
     bodyStyles: { fontSize: 10, halign: 'center', textColor: [80, 80, 80] },
     columnStyles: { 0: { halign: 'left', fontStyle: 'bold', textColor: [120, 120, 120], fontSize: 8 } },
@@ -878,7 +878,10 @@ export default function CSRPortal() {
   const searchRef = useRef(null)
 
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ medium: MEDIUMS[0], country: COUNTRIES[0], project: COUNTRY_MAP[COUNTRIES[0]][0].p, department: COUNTRY_MAP[COUNTRIES[0]][0].d, type: TYPES[0], order_id: '' })
+  const [form, setForm] = useState(() => {
+    const c = COUNTRIES[0]; const p = PROJECTS_FOR_COUNTRY(c)[0] || ''; const d = DEPTS_FOR_COMBO(c, p)[0] || ''
+    return { medium: MEDIUMS[0], country: c, project: p, department: d, type: TYPES[0], order_id: '' }
+  })
   const [dlH, setDlH] = useState('12')
   const [dlMin, setDlMin] = useState('00')
   const [dlAp, setDlAp] = useState('PM')
