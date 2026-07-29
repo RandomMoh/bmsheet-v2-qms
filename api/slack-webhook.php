@@ -307,7 +307,8 @@ function slackPost($url, $postPayload, $token) {
     return $res;
 }
 
-$validProjectsList = ["3D","AH","AT","BB","Bierce","BR","Cubi","CB","CP 360 FP","CK","Capture","Code","Focal","Focal MP","Focal PB","Focal UI","Focal CAD","FNC","FS","GP","GF","HC","HSA","HM","HS","JH","JV","JL","MA","MD","ME","Metro","Mi","OH","Open House","PM","PRO","REM","Schematic","SA","Scan","Simple","Single","SKM","SM","TIFF","TQ","VG","WIN","Xactimate","ZFP","Roomio","Faro","FF","REFP"];
+$validProjectsList = ["3D","AH","AT","BB","Bierce","BR","Cubi","CB","CP 360 FP","CK","Capture","Code","Focal","Focal MP","Focal PB","Focal UI","Focal CAD","Focal CRM","Focal Video","FNC","FS","GP","GF","HC","HSA","HM","HS","JH","JV","JL","MA","MD","ME","Metro","Mi","OH","Open House","PM","PRO","REM","Schematic","SA","Scan","Simple","Single","SKM","SM","TIFF","TQ","VG","WIN","Xactimate","ZFP","Roomio","Faro","FF","REFP","SB","CT","Creative","Now","Prestige","HDR","Esoft","Nat3D","xactimate","roomio","schematic","schematic","PB"];
+$validProjectsList = array_unique($validProjectsList);
 $validDeptsList    = ["Floor Plan","Photo Enhancement","3D Floor Plan","Video Editing","Virtual Staging"];
 $validProjects     = implode(', ', $validProjectsList);
 $validDepartments  = implode(', ', $validDeptsList);
