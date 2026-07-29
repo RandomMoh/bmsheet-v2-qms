@@ -889,6 +889,7 @@ export default function CSRPortal() {
   const [reportTo, setReportTo] = useState('')
   const [dashFrom, setDashFrom] = useState('')
   const [dashTo, setDashTo] = useState('')
+  const [dashSelectedProjects, setDashSelectedProjects] = useState([])
   const [reportCsr, setReportCsr] = useState('')
   const [drillUser, setDrillUser] = useState(null)
   const [timelineOrder, setTimelineOrder] = useState(null)
@@ -1044,7 +1045,12 @@ export default function CSRPortal() {
   const loading = !statsQuery.data && statsQuery.isLoading
 
   const dashOrdersData = dashQuery.data?.data || (Array.isArray(dashQuery.data) ? dashQuery.data : [])
-  const dashReport = useMemo(() => buildReportWithPending(dashOrdersData, completedByNames), [dashOrdersData, completedByNames])
+  const filteredDashOrders = useMemo(() => {
+    if (!dashSelectedProjects.length) return dashOrdersData;
+    return dashOrdersData.filter(o => dashSelectedProjects.includes(o.project_name));
+  }, [dashOrdersData, dashSelectedProjects])
+
+  const dashReport = useMemo(() => buildReportWithPending(filteredDashOrders, completedByNames), [filteredDashOrders, completedByNames])
   const dashSorted = useMemo(() => Object.values(dashReport).sort((a, b) => {
     if (a.name === 'Unassigned') return 1;
     if (b.name === 'Unassigned') return -1;
@@ -1431,7 +1437,7 @@ export default function CSRPortal() {
           {section === 'qms_dashboard' && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '16px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div>
                     <label className="lbl" style={{ marginBottom: 4, display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date From</label>
                     <input type="date" value={dashFrom} onChange={e => setDashFrom(e.target.value)} className="inp" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }} />
@@ -1440,8 +1446,13 @@ export default function CSRPortal() {
                     <label className="lbl" style={{ marginBottom: 4, display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date To</label>
                     <input type="date" value={dashTo} onChange={e => setDashTo(e.target.value)} className="inp" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }} />
                   </div>
+                  <ProjectSelect selected={dashSelectedProjects} onChange={setDashSelectedProjects} allProjects={PROJECTS} />
                   <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
-                     {(dashFrom || dashTo) && <button onClick={() => { setDashFrom(''); setDashTo('') }} className="btn btn-ghost btn-sm" style={{ height: 38 }}>Reset Dates</button>}
+                     {(dashFrom || dashTo || dashSelectedProjects.length > 0) && (
+                       <button onClick={() => { setDashFrom(''); setDashTo(''); setDashSelectedProjects([]) }} className="btn btn-ghost btn-sm" style={{ height: 38 }}>
+                         Reset Filters
+                       </button>
+                     )}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

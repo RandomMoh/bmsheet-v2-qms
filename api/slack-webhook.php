@@ -110,27 +110,144 @@ $CSR_USER_IDS = [
     'U37QCSCEQ',   // orders@elementsproperty.co.uk
 ];
 
-if ($thread_ts) {
-    if ($sender_user && in_array($sender_user, $CSR_USER_IDS)) {
-        $esc_thread_ts = mysqli_real_escape_string($conn, $thread_ts);
-        $replyNow      = $ts ? date('Y-m-d H:i:s', intval($ts)) : date('Y-m-d H:i:s');
-        $esc_replyNow  = mysqli_real_escape_string($conn, $replyNow);
+function getSlackUserName($userId, $token) {
+    if (!$userId) return 'Slack User';
+    static $userCache = [];
+    if (isset($userCache[$userId])) return $userCache[$userId];
+    
+    $url = "https://slack.com/api/users.info?user=" . urlencode($userId);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_SSL_VERIFYPEER => false,
+    ]);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    if ($res) {
+        $json = json_decode($res, true);
+        if (isset($json['ok']) && $json['ok'] && isset($json['user'])) {
+            $u = $json['user'];
+            $name = $u['profile']['real_name'] ?? $u['profile']['display_name'] ?? $u['name'] ?? $userId;
+            $userCache[$userId] = $name;
+            return $name;
+        }
+    }
+    $userCache[$userId] = $userId;
+    return $userId;
+}
 
-        $update_sql = "UPDATE `order`
+if ($thread_ts) {
+    $cleanReplyText = cleanSlackText($text);
+    $replyNow       = $ts ? date('Y-m-d H:i:s', intval($ts)) : date('Y-m-d H:i:s');
+    $esc_thread_ts  = mysqli_real_escape_string($conn, $thread_ts);
+    $esc_replyNow   = mysqli_real_escape_string($conn, $replyNow);
+
+    // 1. Stamp 1st reply datetime if this is a CSR reply
+    if ($sender_user && in_array($sender_user, $CSR_USER_IDS)) {
+        $update_first = "UPDATE `order`
             SET `query-first-reply_datetime` = '$esc_replyNow'
             WHERE (`slack_ts` = '$esc_thread_ts' OR `slack_ts` LIKE '{$esc_thread_ts}\\_%')
             AND `query-first-reply_datetime` IS NULL";
+        mysqli_query($conn, $update_first);
+    }
 
-        $update_res = mysqli_query($conn, $update_sql);
-        $affected   = mysqli_affected_rows($conn);
+    // 2. Check if the thread reply indicates COMPLETION or ISSUE
+    $isCompletionReply = preg_match('/\b(uploaded|done|completed|ready|cleared|sent|delivered|portal)\b/i', $cleanReplyText);
+    $isIssueReply      = preg_match('/\b(issue|missing|error|redo|revision|amend|changes|ask customer|email customer|provide template)\b/i', $cleanReplyText);
 
-        if ($update_res && $affected > 0) {
-            debugLog("✅ 1st reply stamped at $replyNow for thread $thread_ts — $affected order(s) updated (CSR: $sender_user).");
-        } else {
-            debugLog("Thread $thread_ts — no match or already has 1st reply (CSR: $sender_user).");
+    if ($isCompletionReply || $isIssueReply) {
+        $csrName     = getSlackUserName($sender_user, $bot_token);
+        $esc_csrName = mysqli_real_escape_string($conn, $csrName);
+
+        // A. Look for order number in reply text (#XXXXXX format)
+        preg_match_all('/#(\d{4,7})/', $cleanReplyText, $replyMatches);
+        $foundOrders = array_unique($replyMatches[1] ?? []);
+
+        // B. If no order number in reply, check DB for orders with this thread_ts
+        if (empty($foundOrders)) {
+            $db_res = mysqli_query($conn, "SELECT DISTINCT `propery-order` FROM `order` WHERE `slack_ts` = '$esc_thread_ts' OR `slack_ts` LIKE '{$esc_thread_ts}\\_%'");
+            if ($db_res) {
+                while ($r = mysqli_fetch_assoc($db_res)) {
+                    if (!empty($r['propery-order'])) $foundOrders[] = $r['propery-order'];
+                }
+            }
         }
-    } else {
-        debugLog("Thread reply from non-CSR ($sender_user). Ignored for 1st-reply stamping.");
+
+        // C. If still no order number, fetch parent thread message from Slack API
+        if (empty($foundOrders)) {
+            $parentUrl = "https://slack.com/api/conversations.replies?channel=" . urlencode($channel) . "&ts=" . urlencode($thread_ts) . "&limit=1";
+            $pch = curl_init($parentUrl);
+            curl_setopt_array($pch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $bot_token],
+                CURLOPT_TIMEOUT        => 5,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $pres = curl_exec($pch);
+            curl_close($pch);
+            if ($pres) {
+                $pjson = json_decode($pres, true);
+                if (isset($pjson['messages'][0]['text'])) {
+                    $parentText = cleanSlackText($pjson['messages'][0]['text']);
+                    preg_match_all('/#(\d{4,7})/', $parentText, $parentMatches);
+                    $foundOrders = array_unique($parentMatches[1] ?? []);
+                    if (empty($foundOrders)) {
+                        $foundOrders = [substr($parentText, 0, 80)];
+                    }
+                }
+            }
+        }
+
+        // Process found orders
+        foreach ($foundOrders as $targetOrder) {
+            $targetOrder = trim($targetOrder);
+            if (!$targetOrder) continue;
+            $esc_targetOrder = mysqli_real_escape_string($conn, $targetOrder);
+            $esc_cleanText   = mysqli_real_escape_string($conn, $cleanReplyText);
+
+            $chk_res = mysqli_query($conn, "SELECT id, status FROM `order` WHERE `propery-order` = '$esc_targetOrder' ORDER BY id DESC LIMIT 1");
+            
+            if ($isCompletionReply) {
+                $esc_botName = mysqli_real_escape_string($conn, 'Slack Bot');
+                if ($chk_res && $chk_row = mysqli_fetch_assoc($chk_res)) {
+                    $oid = $chk_row['id'];
+                    mysqli_query($conn, "UPDATE `order` SET `status` = 'completed', `type` = 'Completion', `query_done` = '$esc_replyNow', `completed_by` = '$esc_botName', `query-first-reply_datetime` = COALESCE(`query-first-reply_datetime`, '$esc_replyNow') WHERE id = $oid");
+                    debugLog("Thread Completion: Updated existing order #$targetOrder to completed (by Slack Bot).");
+                } else {
+                    $date  = $ts ? date('Y-m-d', intval($ts)) : date('Y-m-d');
+                    $year  = date('Y');
+                    $month = date('m');
+                    $esc_dept = mysqli_real_escape_string($conn, ($channelCtx && $channelCtx['default_department']) ? $channelCtx['default_department'] : 'Floor Plan');
+                    $esc_proj = mysqli_real_escape_string($conn, ($channelCtx && $channelCtx['default_project']) ? $channelCtx['default_project'] : 'Single');
+                    
+                    $ins_sql = "INSERT INTO `order`
+                        (`year`, `month`, `date`, `communication_medium`, `project_name`, `department`,
+                         `type`, `propery-order`, `query-received_datetime`, `query-first-reply_datetime`, `inserted_datetime`,
+                         `qname`, `status`, `query_done`, `completed_by`, `reminder_hours`, `instruction`, `slack_ts`)
+                        VALUES
+                        ('$year', '$month', '$date', 'Slack', '$esc_proj', '$esc_dept',
+                         'Completion', '$esc_targetOrder', '$esc_replyNow', '$esc_replyNow', '$esc_replyNow',
+                         'Slack Bot', 'completed', '$esc_replyNow', '$esc_botName', 4, '$esc_cleanText', '$esc_thread_ts')";
+                    mysqli_query($conn, $ins_sql);
+                    debugLog("Thread Completion: Created NEW completed order #$targetOrder (by Slack Bot).");
+                }
+
+                // Add checkmark reaction to thread reply in Slack
+                slackPost('https://slack.com/api/reactions.add', [
+                    'channel'   => $channel,
+                    'name'      => 'white_check_mark',
+                    'timestamp' => $ts,
+                ], $bot_token);
+            } elseif ($isIssueReply && !$isCompletionReply) {
+                if ($chk_res && $chk_row = mysqli_fetch_assoc($chk_res)) {
+                    $oid = $chk_row['id'];
+                    mysqli_query($conn, "UPDATE `order` SET `status` = 'issue', `type` = 'Issue', `instruction` = '$esc_cleanText' WHERE id = $oid");
+                    debugLog("Thread Issue: Updated order #$targetOrder to issue.");
+                }
+            }
+        }
     }
 
     ackSlack();
@@ -202,6 +319,13 @@ $cleanText = cleanSlackText($text);
 
 if (strlen($cleanText) < 3 && $subtype !== 'file_share') {
     debugLog("Message too short after cleanup: '$cleanText'. Ignoring.");
+    exit;
+}
+
+// Pre-filter: Check if the message is asking for ETA / Status update
+if (preg_match('/\b(eta|status|update|when will|any news|turnaround|how long|progress)\b/i', $cleanText) &&
+    !preg_match('/\b(uploaded|done|completed|ready|issue|missing|error|redo|revision|amend|changes|attached)\b/i', $cleanText)) {
+    debugLog("SKIPPED: Message is an ETA/Status inquiry: '$cleanText'");
     exit;
 }
 
@@ -334,18 +458,17 @@ Return a single JSON object:
 STRICT RULES — follow exactly:
 
 WHAT IS AN ORDER (is_order: true):
-- A message containing a PROPERTY ADDRESS (street, city, state/postcode)
-- A message containing an ORDER NUMBER like #314924, #313583, Order #314888, Portal Order #315052
+- A message containing a PROPERTY ADDRESS (street, city, state/postcode) ONLY IF it is placing a new order or requesting work.
+- A message containing an ORDER NUMBER like #314924, #313583, Order #314888, Portal Order #315052 ONLY IF it is placing a new order, amending, or marking completion/issue.
 - A message about creating, amending, or redoing a floor plan, 3D render, photo edit, etc.
 - A message asking to "monitor" or "complete" specific order numbers — these ARE orders to track
 - A message stating an order is uploaded, completed, or has an issue FOR A SPECIFIC ORDER.
-- IMPORTANT: If the message contains ANY order number (#XXXXXX format), it IS an order regardless of surrounding text
 
 WHAT IS NOT AN ORDER (is_order: false):
+- CRITICAL RULE: Any message asking for an ETA, status update, turnaround time, progress, or when an order will be done (e.g., "Can I get an ETA on this order?", "Any ETA?", "Status check please?", "When will this be ready?") MUST BE SET TO is_order: false, EVEN IF IT CONTAINS AN ORDER NUMBER (#XXXXXX) OR ADDRESS.
 - Greetings, thank yous, good morning messages with NO order numbers
 - General questions with no order numbers like "are these done?", "how is everyone?"
 - Internal coordination with NO specific order numbers like "they are due in 2 hours"
-- Messages asking for an update, ETA, or status check on an existing order without providing a new order or amendment.
 - Messages that are just punctuation, emoji, or under 5 words with no address/order number
 - File-only uploads with no caption (unless channel context implies all uploads are orders)
 
@@ -406,7 +529,16 @@ if (!in_array($type, ['New Order', 'Amend', 'Completion', 'Issue'])) {
     $type = 'New Order';
 }
 
+// PHP Safety Rule: Force type to Issue if message is asking to contact customer or missing info/template
+if (preg_match('/\b(ask customer|ask client|email customer|email client|contact customer|contact client|provide template|provide style|provide details|missing|cannot draw|cannot proceed|on hold)\b/i', $cleanText)) {
+    $type = 'Issue';
+    debugLog("Bulletproof rule applied: Issue phrase found in message -> Type set to Issue");
+}
+
 $remark = isset($parsed['remark']) ? trim($parsed['remark']) : '';
+if (empty($remark) && $type === 'Issue') {
+    $remark = $cleanText;
+}
 $esc_remark = mysqli_real_escape_string($conn, $remark);
 
 preg_match_all('/#(\d{4,7})/', $cleanText, $orderMatches);
