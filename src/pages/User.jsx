@@ -1611,7 +1611,7 @@ export default function CSRPortal() {
                             <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => openDet(o)}>
                               <td>{fmtDt(o['query-received_datetime'])}</td>
                               <td><span className={`pill ${overdue ? 'pill-danger' : 'pill-neutral'}`}>{age}</span></td>
-                              <td>{isUnassigned(o.communication_medium) ? <FieldSelect order={o} field="communication_medium" options={MEDIUMS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.communication_medium}</td>
+                              <td className="cell-medium" title={o.communication_medium}>{isUnassigned(o.communication_medium) ? <FieldSelect order={o} field="communication_medium" options={MEDIUMS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.communication_medium}</td>
                               <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
                               <td className="cell-bold">
                                 {isUnassigned(o.project_name) ? <FieldSelect order={o} field="project_name" options={PROJECTS} style={{ fontSize: 12, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--status-warning)', background: 'var(--status-warning-bg)', color: 'var(--status-warning)' }} /> : o.project_name}
@@ -1622,7 +1622,7 @@ export default function CSRPortal() {
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
                               <td style={{ color: overdue ? 'var(--status-danger)' : 'var(--text-muted)', fontWeight: overdue ? 600 : 400 }}><Countdown deadline={o._deadline} /></td>
                               <td>{fmtDt(o['query-first-reply_datetime'])}</td>
-                              <td>{o.qname}</td>
+                              <td className="cell-user">{o.qname}</td>
                               <td style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                                 <button onClick={() => setExt(o)} className="btn btn-ghost btn-sm" title="Extend"><Icon paths={IC.clock} size={12} /></button>
                                 {o.slack_ts && (
@@ -1639,12 +1639,12 @@ export default function CSRPortal() {
                             <tr key={o.id}>
                               <td>{fmtDt(o['query-received_datetime'])}</td>
                               <td><span className="pill pill-warning">{elapsedStr(o['query-received_datetime'])}</span></td>
-                              <td>{o.communication_medium}</td>
+                              <td className="cell-medium" title={o.communication_medium}>{o.communication_medium}</td>
                               <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
                               <td className="cell-bold">{o.project_name} - {o.department}</td>
                               <td>{o.type}</td>
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
-                              <td>{o.qname}</td>
+                              <td className="cell-user">{o.qname}</td>
                               <td className="cell-trunc" title={o.instruction}>{o.instruction || '—'}</td>
                               <td><button onClick={() => { setResOrd(o); setResText(''); setResFb(null) }} className="btn btn-primary btn-sm">Resolve</button></td>
                             </tr>
@@ -1656,15 +1656,15 @@ export default function CSRPortal() {
                           return (
                             <tr key={o.id}>
                               <td>{fmtDt(o['query-received_datetime'])}</td>
-                              <td>{o.communication_medium}</td>
+                              <td className="cell-medium" title={o.communication_medium}>{o.communication_medium}</td>
                               <td><span className="pill pill-neutral" style={{ fontSize: 11 }}>{getCountryForProject(o.project_name, o.department)}</span></td>
                               <td className="cell-bold">{o.project_name} - {o.department}</td>
                               <td>{o.type}</td>
                               <td className="cell-bold">{o['propery-order'] || '—'}</td>
                               <td>{fmtDt(o['query-first-reply_datetime'])}</td>
                               <td>{fmtDt(o.query_done)}</td>
-                              <td>{o.qname}</td>
-                              <td className="cell-good">{o.completed_by || '—'}</td>
+                              <td className="cell-user">{o.qname}</td>
+                              <td className="cell-user">{o.completed_by || '—'}</td>
                               <td><span className={`pill ${bad ? 'pill-danger' : 'pill-neutral'}`}>{dur}</span></td>
                               <td style={{ textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
                                 <button onClick={() => setTimelineOrder(o)} title="View Query Timeline"
