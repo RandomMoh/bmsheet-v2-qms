@@ -1561,7 +1561,25 @@ export default function CSRPortal() {
     }
     ping()
     const timer = setInterval(ping, 15000)
-    return () => clearInterval(timer)
+
+    const handleLeave = () => {
+      const payload = JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name })
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' })
+        navigator.sendBeacon(`${API}/leave.php`, blob)
+      } else {
+        fetch(`${API}/leave.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {})
+      }
+    }
+
+    window.addEventListener('pagehide', handleLeave)
+    window.addEventListener('beforeunload', handleLeave)
+
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('pagehide', handleLeave)
+      window.removeEventListener('beforeunload', handleLeave)
+    }
   }, [user, displayRole, queryClient, API])
 
   if (!user) return null

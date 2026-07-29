@@ -56,8 +56,8 @@ if ($active_res) {
         $lastAct = $r['last_active'];
         $lastActTime = strtotime($lastAct);
         
-        // Only count session as active if last_active ping was within last 10 minutes (600s)
-        if (($nowTime - $lastActTime) > 600 || $lastActTime > ($nowTime + 300)) {
+        // Only count session as active if last_active ping was within last 2 minutes (120s)
+        if (($nowTime - $lastActTime) > 120 || $lastActTime > ($nowTime + 300)) {
             continue;
         }
 

@@ -59,7 +59,8 @@ $exempt_scripts = [
     'create-csr.php',
     'get-activity-logs.php',
     'get-csr-shifts.php',
-    'heartbeat.php'
+    'heartbeat.php',
+    'leave.php'
 ];
 
 // Read header-based token authentication for multi-tab & persistent session safety
