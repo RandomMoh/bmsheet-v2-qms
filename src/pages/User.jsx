@@ -1474,14 +1474,6 @@ export default function CSRPortal() {
   }
 
 
-  if (!user) return null
-  const initials = displayName[0].toUpperCase()
-  const CARDS = stats ? [
-    { l: 'Total Received', n: stats.total_received, sub: `${stats.total_new} new · ${stats.total_amend} amends` },
-    { l: 'Issues', n: stats.issues, sub: `${stats.issue_new} new · ${stats.issue_amend} amends` },
-    { l: 'Done Today', n: stats.done, sub: `${stats.done_new} new · ${stats.done_amend} amends` },
-    { l: 'Pending', n: stats.pending, sub: `${stats.pending_new} new · ${stats.pending_amend} amends` },
-  ] : []
   const isManager = displayRole !== 'CSR'
   const navGroups = useMemo(() => [
     { label: 'Workspace', items: [
@@ -1511,6 +1503,14 @@ export default function CSRPortal() {
     return () => clearInterval(timer)
   }, [user, displayRole])
 
+  if (!user) return null
+  const initials = displayName[0]?.toUpperCase() || 'U'
+  const CARDS = stats ? [
+    { l: 'Total Received', n: stats.total_received, sub: `${stats.total_new} new · ${stats.total_amend} amends` },
+    { l: 'Issues', n: stats.issues, sub: `${stats.issue_new} new · ${stats.issue_amend} amends` },
+    { l: 'Done Today', n: stats.done, sub: `${stats.done_new} new · ${stats.done_amend} amends` },
+    { l: 'Pending', n: stats.pending, sub: `${stats.pending_new} new · ${stats.pending_amend} amends` },
+  ] : []
   const SECTION_TITLES = { current: 'Current Queue', issue: 'Emailed / Issue', done: 'Done Queries', reports: 'Reports', profile: 'Profile', qms_dashboard: 'Performance Dashboard', csr_shifts: 'CSR Shifts & Live Presence' }
   const sectionBadge = id => id === 'current' ? curOrds.length : id === 'issue' ? issOrds.length : id === 'done' ? doneOrds.length : null
 
