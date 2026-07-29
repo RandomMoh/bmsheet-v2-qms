@@ -809,8 +809,8 @@ function ExpandedCsrRow({ u }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', gap: 16, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)', marginBottom: 12 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Avg 1st Reply</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Avg Done</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>1st Reply</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Last Reply/Completion</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1755,8 +1755,8 @@ export default function CSRPortal() {
                         <tr>
                           <th style={{ textAlign: 'left' }}>Project Code</th>
                           <th style={{ textAlign: 'center' }}>Total Queries</th>
-                          <th style={{ textAlign: 'center' }}>Avg 1st Reply</th>
-                          <th style={{ textAlign: 'center' }}>Avg Last Reply</th>
+                          <th style={{ textAlign: 'center' }}>1st Reply</th>
+                          <th style={{ textAlign: 'center' }}>Last Reply/Completion</th>
                         </tr>
                       </thead>
                       <tbody>
