@@ -21,7 +21,7 @@ $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, X-QMS-User, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -61,6 +61,24 @@ $exempt_scripts = [
     'get-csr-shifts.php',
     'heartbeat.php'
 ];
+
+// Read header-based token authentication for multi-tab & persistent session safety
+$headers = function_exists('getallheaders') ? getallheaders() : [];
+$qmsUserHeader = $headers['X-QMS-User'] ?? $headers['x-qms-user'] ?? $_SERVER['HTTP_X_QMS_USER'] ?? null;
+
+if (!empty($qmsUserHeader)) {
+    $uData = json_decode($qmsUserHeader, true);
+    if ($uData && !empty($uData['id'])) {
+        $uId = (int)$uData['id'];
+        $uCheck = mysqli_query($conn, "SELECT d_id, dusername, dname, role FROM user WHERE d_id = $uId LIMIT 1");
+        if ($uCheck && $uRow = mysqli_fetch_assoc($uCheck)) {
+            $_SESSION['auth'] = true;
+            $_SESSION['user_id'] = (int)$uRow['d_id'];
+            $_SESSION['username'] = $uRow['dname'];
+            $_SESSION['role'] = $uRow['role'] ?? 'CSR';
+        }
+    }
+}
 
 if (!in_array($script_name, $exempt_scripts)) {
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
