@@ -529,10 +529,18 @@ if (!in_array($type, ['New Order', 'Amend', 'Completion', 'Issue'])) {
     $type = 'New Order';
 }
 
-// PHP Safety Rule: Force type to Issue if message is asking to contact customer or missing info/template
-if (preg_match('/\b(ask customer|ask client|email customer|email client|contact customer|contact client|provide template|provide style|provide details|missing|cannot draw|cannot proceed|on hold)\b/i', $cleanText)) {
-    $type = 'Issue';
-    debugLog("Bulletproof rule applied: Issue phrase found in message -> Type set to Issue");
+// Completion Rule: If message explicitly states "Uploaded on Portal", "Completed", "Ready", or "Done", force Completion
+$hasCompletionPhrase = preg_match('/(uploaded\s+on\s+portal|uploaded\s+to\s+portal|uploaded\s+on\s+crm|uploaded\s+on\s+site|\*uploaded\s+on\s+portal\*|\bcompleted\b|\bready\b|\bdone\b)/i', $cleanText);
+
+if ($hasCompletionPhrase) {
+    $type = 'Completion';
+    debugLog("Bulletproof rule applied: Completion phrase found ('Uploaded on Portal') -> Forcing Type to Completion");
+} else {
+    // PHP Safety Rule: Force type to Issue if message is asking to contact customer or missing info/template
+    if (preg_match('/\b(ask customer|ask client|email customer|email client|contact customer|contact client|provide template|provide style|provide details|missing|cannot draw|cannot proceed|on hold)\b/i', $cleanText)) {
+        $type = 'Issue';
+        debugLog("Bulletproof rule applied: Issue phrase found in message -> Type set to Issue");
+    }
 }
 
 $remark = isset($parsed['remark']) ? trim($parsed['remark']) : '';

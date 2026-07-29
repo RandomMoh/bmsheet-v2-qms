@@ -6,7 +6,7 @@ idx = child.expect(["assword:", pexpect.EOF, pexpect.TIMEOUT], timeout=10)
 if idx == 0:
     child.sendline("Bm!v2@#456&*()")
     child.expect(["\\$", "#", ">"], timeout=10)
-    sql = "mysql -u bmsheetv2benchma_admin -p'}B(cMH)z[*g@' bmsheetv2benchma_qms -e 'SELECT NOW() AS pkt_now; SELECT * FROM active_sessions; SELECT qname, completed_by, date FROM `order` WHERE date >= DATE_SUB(NOW(), INTERVAL 30 MINUTE);'"
+    sql = "mysql -u bmsheetv2benchma_admin -p'}B(cMH)z[*g@' bmsheetv2benchma_qms -e 'SELECT id, year, month, date, project_name, department, type, `propery-order`, qname, status, query_done, completed_by, instruction FROM `order` WHERE `propery-order` LIKE \"%349799%\";'"
     child.sendline(sql)
     child.expect(["\\$", "#", ">"], timeout=15)
     print(child.before)
