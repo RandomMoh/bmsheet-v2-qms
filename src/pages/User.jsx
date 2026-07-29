@@ -39,7 +39,6 @@ const MEDIUMS = ['Slack', 'Skype', 'MS Teams', 'BR Outlook Account', 'Outlook Em
 const COUNTRY_MAP = {
   'UK': [
     { p: 'Focal CRM', d: 'Photo Enhancement' },
-    { p: 'Focal CRM', d: 'Floor Plan' },
     { p: 'PB', d: 'Photo Enhancement' },
     { p: 'Prestige', d: 'Photo Enhancement' },
     { p: 'HDR', d: 'Photo Enhancement' },
