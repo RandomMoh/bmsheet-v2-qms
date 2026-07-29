@@ -921,13 +921,17 @@ export default function CSRPortal() {
   const [extBusy, setExtBusy] = useState(false)
 
   const [toast, setToast] = useState(null)
+  const [notifPerm, setNotifPerm] = useState("Notification" in window ? Notification.permission : "default")
   const prevCount = useRef(0)
+
+  const requestNotif = () => {
+    if ("Notification" in window) {
+      Notification.requestPermission().then(p => setNotifPerm(p))
+    }
+  }
 
   const playBell = useRef(null)
   useEffect(() => {
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-      Notification.requestPermission();
-    }
     playBell.current = (times = 1) => {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
       for (let i = 0; i < times; i++) {
@@ -1403,6 +1407,11 @@ export default function CSRPortal() {
             {section === 'current' && <span className="topbar-sub">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>}
           </div>
           <div className="topbar-actions">
+            {notifPerm === 'default' && (
+              <button onClick={requestNotif} className="btn btn-primary" style={{ background: '#3b82f6', color: '#fff', fontSize: 11, padding: '4px 10px', height: 28 }}>
+                <Icon paths={IC.bell} size={12} /> Enable Alerts
+              </button>
+            )}
             <div className="live-sync-indicator" title="Connected and syncing in real-time">
               <div className="live-sync-inner">
                 <div className="live-sync-dot"></div> Live Sync
