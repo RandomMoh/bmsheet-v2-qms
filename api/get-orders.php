@@ -3,7 +3,6 @@ date_default_timezone_set('Asia/Karachi');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS')
     exit(0);
 
@@ -16,7 +15,20 @@ while ($ur = mysqli_fetch_assoc($ures)) {
     $umap[trim($ur['dusername'])] = trim($ur['dname']);
 }
 
-$query = mysqli_query($conn, "SELECT * FROM `order` ORDER BY id DESC LIMIT 3000");
+$from = isset($_GET['from_date']) && trim($_GET['from_date']) !== '' ? mysqli_real_escape_string($conn, trim($_GET['from_date'])) : '';
+$to = isset($_GET['to_date']) && trim($_GET['to_date']) !== '' ? mysqli_real_escape_string($conn, trim($_GET['to_date'])) : '';
+
+$whereClause = "1=1";
+
+if ($from && $to) {
+    $whereClause .= " AND `date` >= '$from' AND `date` <= '$to'";
+} elseif ($from) {
+    $whereClause .= " AND `date` >= '$from'";
+} elseif ($to) {
+    $whereClause .= " AND `date` <= '$to'";
+}
+
+$query = mysqli_query($conn, "SELECT * FROM `order` WHERE $whereClause ORDER BY id DESC LIMIT 5000");
 
 if (!$query) {
     echo json_encode(["status" => "error", "message" => "SQL Error: " . mysqli_error($conn)]);

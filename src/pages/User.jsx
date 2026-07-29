@@ -1690,12 +1690,21 @@ export default function CSRPortal() {
                     <input type="date" value={dashTo} onChange={e => setDashTo(e.target.value)} className="inp" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-strong)', color: 'var(--text-main)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }} />
                   </div>
                   <ProjectSelect selected={dashSelectedProjects} onChange={setDashSelectedProjects} allProjects={PROJECTS} />
-                  <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
-                     {(dashFrom || dashTo || dashSelectedProjects.length > 0) && (
-                       <button onClick={() => { setDashFrom(''); setDashTo(''); setDashSelectedProjects([]) }} className="btn btn-ghost btn-sm" style={{ height: 38 }}>
-                         Reset Filters
-                       </button>
-                     )}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, paddingBottom: 2 }}>
+                    <button onClick={() => { const d = new Date().toISOString().split('T')[0]; setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                      Today
+                    </button>
+                    <button onClick={() => { const y = new Date(); y.setDate(y.getDate() - 1); const d = y.toISOString().split('T')[0]; setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                      Yesterday
+                    </button>
+                    <button onClick={() => { const now = new Date(); const f = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]; const t = now.toISOString().split('T')[0]; setDashFrom(f); setDashTo(t) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                      This Month
+                    </button>
+                    {(dashFrom || dashTo || dashSelectedProjects.length > 0) && (
+                      <button onClick={() => { setDashFrom(''); setDashTo(''); setDashSelectedProjects([]) }} className="btn btn-ghost btn-sm" style={{ height: 38, color: '#ef4444' }}>
+                        Reset
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
