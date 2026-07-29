@@ -133,9 +133,7 @@ const COUNTRY_MAP = {
 
 const COUNTRIES = Object.keys(COUNTRY_MAP);
 const ALL_PROJECTS = [...new Set(Object.values(COUNTRY_MAP).flatMap(c => c.map(i => i.p)))];
-// Returns the list of projects for a given country
 const PROJECTS_FOR_COUNTRY = (country) => [...new Set((COUNTRY_MAP[country] || []).map(i => i.p))]
-// Returns the departments for a given country + project combo
 const DEPTS_FOR_COMBO = (country, project) => {
   const items = (COUNTRY_MAP[country] || []).filter(i => i.p === project)
   return [...new Set(items.map(i => i.d))]
@@ -1215,7 +1213,8 @@ export default function CSRPortal() {
     })
   }
 
-  const displayName = user ? (user.dname || user.name || user.dusername || 'CSR') : 'CSR'
+  const displayName = user ? (user.dname || user.name || user.dusername || 'User') : 'User'
+  const displayRole = user ? (user.userRole || 'CSR') : 'CSR'
 
   const handleSubmit = async e => {
     e.preventDefault(); setBusy(true); setFb(null)
@@ -1375,7 +1374,7 @@ export default function CSRPortal() {
           <img src={`${import.meta.env.BASE_URL}favicon.ico`} alt="Logo" className="sb-logo" style={{ background: 'transparent', boxShadow: 'none', objectFit: 'contain', padding: 0 }} />
           <div>
             <div className="sb-title">Benchmark<em>Studio</em></div>
-            <div className="sb-subtitle">CSR</div>
+            <div className="sb-subtitle">{displayRole}</div>
           </div>
         </div>
         <nav className="sb-nav">
@@ -1402,7 +1401,7 @@ export default function CSRPortal() {
           <div className="sb-avatar csr-avatar-wrapper" style={{background:'var(--bg-hover)', color:'var(--accent-primary)', display:'flex', alignItems:'center', justifyContent:'center'}}><UserIcon className="csr-avatar-icon" size={16} strokeWidth={2} /></div>
           <div className="sb-user-info">
             <div className="sb-user-name">{displayName}</div>
-            <div className="sb-user-role">CSR</div>
+            <div className="sb-user-role">{displayRole}</div>
           </div>
           <ThemeToggle />
           <button onClick={logout} title="Sign out" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 4, display: 'flex' }}><Icon paths={IC.logout} size={14} /></button>
@@ -1822,7 +1821,7 @@ export default function CSRPortal() {
             <div className="profile-card fade-up">
               <div className="panel" style={{ padding: 24 }}>
                 <div className="profile-avatar csr-avatar-wrapper" style={{background:'var(--bg-hover)', color:'var(--accent-primary)', display:'flex', alignItems:'center', justifyContent:'center'}}><UserIcon className="csr-avatar-icon" size={32} strokeWidth={1.5} /></div>
-                {[['Display Name', displayName], ['Username', user.dusername || user.username || '—'], ['Role', 'CSR'], ['Status', 'Active']].map(([l, v]) => (
+                {[['Display Name', displayName], ['Username', user.dusername || user.username || '—'], ['Role', displayRole], ['Status', 'Active']].map(([l, v]) => (
                   <div key={l} className="profile-row"><span className="profile-label">{l}</span><span className="profile-val">{v}</span></div>
                 ))}
               </div>

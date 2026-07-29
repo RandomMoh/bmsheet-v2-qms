@@ -6,15 +6,11 @@ const WebGLBackground = lazy(() => import('../components/WebGLBackground'))
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
 
-const ROLES = [
-  { id: 'user', label: 'CSR Portal' },
-  { id: 'admin', label: 'Admin Portal' },
-]
+
 
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('user')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [focusField, setFocusField] = useState(null)
@@ -31,7 +27,7 @@ export default function Login() {
       const res = await fetch(`${API_BASE}/login.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role })
+        body: JSON.stringify({ username, password })
       })
       const data = await res.json()
       
@@ -57,7 +53,7 @@ export default function Login() {
     }
   }
 
-  const isUser = role === 'user'
+
 
   return (
     <div style={{ fontFamily: "'Inter', -apple-system, system-ui, sans-serif", minHeight: '100vh', display: 'flex', backgroundColor: 'var(--bg-base)', overflow: 'hidden' }}>
@@ -136,23 +132,7 @@ export default function Login() {
             <p style={{ fontSize: 14, color: 'var(--text-faint)', margin: 0 }}>Sign in to access your dashboard</p>
           </div>
 
-          {/* Role tabs */}
-          <div style={{ display: 'flex', background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 3, marginBottom: 28, position: 'relative' }}>
-            {ROLES.map(r => (
-              <button key={r.id} type="button" onClick={() => setRole(r.id)}
-                style={{
-                  flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
-                  transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
-                  background: role === r.id ? 'var(--bg-panel)' : 'transparent',
-                  color: role === r.id ? 'var(--text-main)' : 'var(--text-faint)',
-                  boxShadow: role === r.id ? 'var(--shadow-sm)' : 'none',
-                  position: 'relative', zIndex: role === r.id ? 1 : 0,
-                }}>
-                {r.label}
-              </button>
-            ))}
-          </div>
+
 
           {error && (
             <div className="anim-fade-in" style={{ marginBottom: 20, padding: '10px 14px', background: 'var(--status-danger-bg)', border: '1px solid var(--status-danger)', borderRadius: 'var(--radius-md)', color: 'var(--status-danger)', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -163,7 +143,7 @@ export default function Login() {
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {[
-              { l: isUser ? 'Username' : 'Admin Name', t: 'text', v: username, s: e => setUsername(e.target.value), k: 'user' },
+              { l: 'Username', t: 'text', v: username, s: e => setUsername(e.target.value), k: 'user' },
               { l: 'Password', t: 'password', v: password, s: e => setPassword(e.target.value), k: 'pass' },
             ].map(f => (
               <div key={f.k} style={{ position: 'relative' }}>
