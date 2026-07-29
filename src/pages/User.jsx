@@ -1422,7 +1422,7 @@ export default function CSRPortal() {
           </div>
         </header>
 
-        <main className="content">
+        <main className="content" style={['current', 'issue', 'done'].includes(section) ? { overflow: 'hidden' } : { overflowY: 'auto' }}>
           {section === 'qms_dashboard' && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '16px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
