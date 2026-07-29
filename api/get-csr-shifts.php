@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Karachi');
 include_once 'config.php';
 
-// Simplified shift schedule listing only names per shift
+// Shift schedule listing names per shift with both Ayeshas mapped
 $schedule = [
     'shift1' => [
         'label' => '7am till 4pm',
@@ -20,6 +20,7 @@ $schedule = [
         'label' => '12pm till 9pm',
         'csrs' => [
             ['name' => 'Hafsa CSR', 'username' => 'hafsa'],
+            ['name' => 'Ayesha Waris', 'username' => 'ayesha_waris'],
             ['name' => 'Saman CSR', 'username' => 'saman'],
             ['name' => 'Aman Zahra CSR', 'username' => 'aman_zahra'],
             ['name' => 'Kaneez Fatima', 'username' => 'kaneez.fatima'],
@@ -33,7 +34,8 @@ $schedule = [
         'csrs' => [
             ['name' => 'Fatima Zahra CSR', 'username' => 'fatima.zahra'],
             ['name' => 'Shiza CSR', 'username' => 'shiza'],
-            ['name' => 'Muteeba CSR', 'username' => 'muteeba']
+            ['name' => 'Muteeba CSR', 'username' => 'muteeba'],
+            ['name' => 'Ayesha Owais', 'username' => 'ayesha.owais']
         ]
     ]
 ];
