@@ -141,6 +141,10 @@ const DEPTS_FOR_COMBO = (country, project) => {
   const items = (COUNTRY_MAP[country] || []).filter(i => i.p === project)
   return [...new Set(items.map(i => i.d))]
 }
+const DEPTS_FOR_PROJECT = (project) => {
+  const items = Object.values(COUNTRY_MAP).flat().filter(i => i.p === project)
+  return [...new Set(items.map(i => i.d))]
+}
 const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editing', 'Virtual Staging']
 const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
@@ -879,8 +883,8 @@ export default function CSRPortal() {
 
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(() => {
-    const c = COUNTRIES[0]; const p = PROJECTS_FOR_COUNTRY(c)[0] || ''; const d = DEPTS_FOR_COMBO(c, p)[0] || ''
-    return { medium: MEDIUMS[0], country: c, project: p, department: d, type: TYPES[0], order_id: '' }
+    const p = ALL_PROJECTS[0] || ''; const d = DEPTS_FOR_PROJECT(p)[0] || ''
+    return { medium: MEDIUMS[0], project: p, department: d, type: TYPES[0], order_id: '' }
   })
   const [dlH, setDlH] = useState('12')
   const [dlMin, setDlMin] = useState('00')
@@ -1166,25 +1170,18 @@ export default function CSRPortal() {
   const openNew = () => {
     const d = defaultPKTDL()
     setDlH(d.h); setDlMin(d.min); setDlAp(d.ap); setDlMode('4')
-    const firstCountry = COUNTRIES[0]
-    const firstProject = PROJECTS_FOR_COUNTRY(firstCountry)[0] || ''
-    const firstDepts = DEPTS_FOR_COMBO(firstCountry, firstProject)
+    const firstProject = ALL_PROJECTS[0] || ''
+    const firstDepts = DEPTS_FOR_PROJECT(firstProject)
     const firstDept = firstDepts[0] || ''
-    setForm({ medium: MEDIUMS[0], country: firstCountry, project: firstProject, department: firstDept, type: TYPES[0], order_id: '' })
+    setForm({ medium: MEDIUMS[0], project: firstProject, department: firstDept, type: TYPES[0], order_id: '' })
     setRecvTime(''); setFirstReplyTime('')
     setFb(null); setOpen(true)
   }
   const fc = e => {
     const { name, value } = e.target
     setForm(prev => {
-      if (name === 'country') {
-        const projs = PROJECTS_FOR_COUNTRY(value)
-        const newProj = projs[0] || ''
-        const depts = DEPTS_FOR_COMBO(value, newProj)
-        return { ...prev, country: value, project: newProj, department: depts[0] || '' }
-      }
       if (name === 'project') {
-        const depts = DEPTS_FOR_COMBO(prev.country, value)
+        const depts = DEPTS_FOR_PROJECT(value)
         return { ...prev, project: value, department: depts[0] || '' }
       }
       return { ...prev, [name]: value }
@@ -1812,19 +1809,14 @@ export default function CSRPortal() {
                   {MEDIUMS.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </div>
-              <div><label className="lbl">Country</label>
-                <select name="country" value={form.country} onChange={fc} className="inp">
-                  {COUNTRIES.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
               <div><label className="lbl">Project Code</label>
                 <select name="project" value={form.project} onChange={fc} className="inp">
-                  {PROJECTS_FOR_COUNTRY(form.country).map(v => <option key={v} value={v}>{v}</option>)}
+                  {ALL_PROJECTS.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </div>
               <div><label className="lbl">Department</label>
                 <select name="department" value={form.department} onChange={fc} className="inp">
-                  {DEPTS_FOR_COMBO(form.country, form.project).map(v => <option key={v} value={v}>{v}</option>)}
+                  {DEPTS_FOR_PROJECT(form.project).map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </div>
               <div><label className="lbl">Type</label>
