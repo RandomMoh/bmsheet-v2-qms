@@ -2,6 +2,21 @@
 date_default_timezone_set('Asia/Karachi');
 include_once 'config.php';
 
+function formatUptime($secs) {
+    if ($secs < 60) return "< 1m";
+    $mins = floor($secs / 60);
+    $hours = floor($mins / 60);
+    $days = floor($hours / 24);
+    
+    if ($days > 0) {
+        return "{$days}d " . ($hours % 24) . "h";
+    } elseif ($hours > 0) {
+        return "{$hours}h " . ($mins % 60) . "m";
+    } else {
+        return "{$mins}m";
+    }
+}
+
 // Shift schedule listing names per shift
 $schedule = [
     'shift1' => [
@@ -41,7 +56,7 @@ $schedule = [
 ];
 
 // Fetch active sessions from active_sessions table
-$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname, u.dusername 
+$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, a.login_time, u.dname, u.dusername 
     FROM active_sessions a 
     LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username) OR LOWER(u.dname) = LOWER(a.username))
     ORDER BY a.last_active DESC");
@@ -61,10 +76,21 @@ if ($active_res) {
             continue;
         }
 
-        if (!empty($r['username'])) $active_users[strtolower($r['username'])] = $lastAct;
-        if (!empty($r['dusername'])) $active_users[strtolower($r['dusername'])] = $lastAct;
-        if (!empty($r['dname'])) $active_users[strtolower($r['dname'])] = $lastAct;
-        if (!empty($r['user_id'])) $active_users['id_' . $r['user_id']] = $lastAct;
+        $loginTime = !empty($r['login_time']) ? $r['login_time'] : $lastAct;
+        $uptimeSecs = max(0, $nowTime - strtotime($loginTime));
+        $uptimeStr = formatUptime($uptimeSecs);
+
+        $userData = [
+            'lastActive' => $lastAct,
+            'loginTime' => $loginTime,
+            'uptime' => $uptimeStr,
+            'uptimeSecs' => $uptimeSecs
+        ];
+
+        if (!empty($r['username'])) $active_users[strtolower($r['username'])] = $userData;
+        if (!empty($r['dusername'])) $active_users[strtolower($r['dusername'])] = $userData;
+        if (!empty($r['dname'])) $active_users[strtolower($r['dname'])] = $userData;
+        if (!empty($r['user_id'])) $active_users['id_' . $r['user_id']] = $userData;
         
         $uKey = strtolower($r['dusername'] ?: $r['username']);
         if (!isset($seen_users[$uKey])) {
@@ -74,7 +100,10 @@ if ($active_res) {
                 'username' => $r['dusername'] ?: $r['username'],
                 'displayName' => $r['dname'] ?: $r['username'],
                 'role' => $r['role'] ?: 'User',
-                'lastActive' => $r['last_active']
+                'lastActive' => $r['last_active'],
+                'loginTime' => $loginTime,
+                'uptime' => $uptimeStr,
+                'uptimeSecs' => $uptimeSecs
             ];
         }
     }
@@ -115,7 +144,10 @@ foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
         $dname = strtolower($csr['name']);
         
         $isOnline = isset($active_users[$uname]) || isset($active_users[$dname]);
-        $lastActiveTime = $active_users[$uname] ?? $active_users[$dname] ?? null;
+        $userInfo = $active_users[$uname] ?? $active_users[$dname] ?? null;
+        $lastActiveTime = $userInfo['lastActive'] ?? null;
+        $uptimeStr = $userInfo['uptime'] ?? null;
+        $uptimeSecs = $userInfo['uptimeSecs'] ?? 0;
 
         if ($isActive) {
             $stats['scheduled_now']++;
@@ -140,6 +172,8 @@ foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
             'isOnline' => $isOnline,
             'statusState' => $statusState,
             'lastActive' => $lastActiveTime,
+            'uptime' => $uptimeStr,
+            'uptimeSecs' => $uptimeSecs,
             'inCurrentShift' => $isActive
         ];
     }

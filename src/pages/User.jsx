@@ -975,7 +975,9 @@ function CsrShiftsView({ API }) {
                     {u.displayName}
                     <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent-primary)', fontWeight: 600 }}>{u.role}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>@{u.username} · {u.lastActive ? new Date(u.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    @{u.username} · Active: <span style={{ color: '#10b981', fontWeight: 600 }}>{u.uptime || '< 1m'}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1036,9 +1038,16 @@ function CsrShiftsView({ API }) {
                         <UserIcon size={14} style={{ color: badgeColor, opacity: 0.8 }} />
                         {c.name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: badgeColor }}>
-                        <StatusIcon size={13} />
-                        {statusText}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {c.isOnline && c.uptime && (
+                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.08)', color: 'var(--text-main)', fontWeight: 600, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <Clock size={10} style={{ opacity: 0.7 }} /> {c.uptime}
+                          </span>
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: badgeColor }}>
+                          <StatusIcon size={13} />
+                          {statusText}
+                        </div>
                       </div>
                     </div>
                   )

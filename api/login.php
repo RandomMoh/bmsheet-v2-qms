@@ -69,11 +69,11 @@ if (mysqli_num_rows($q) > 0) {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
         $now = date('Y-m-d H:i:s');
 
-        // Immediately update active_sessions on login
+        // Immediately update active_sessions on login and reset login_time
         $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
             VALUES (?, ?, ?, ?, ?, ?, ?) 
-            ON DUPLICATE KEY UPDATE `last_active` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
-        $stmt->bind_param("isssssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $dusername, $userRole, $sessId, $ip);
+            ON DUPLICATE KEY UPDATE `last_active` = ?, `login_time` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
+        $stmt->bind_param("isssssssssssss", $userId, $dusername, $userRole, $sessId, $now, $now, $ip, $now, $now, $dusername, $userRole, $sessId, $ip);
         $stmt->execute();
         $stmt->close();
 
