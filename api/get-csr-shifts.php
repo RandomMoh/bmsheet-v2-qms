@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Karachi');
 include_once 'config.php';
 
-// Shift schedule listing names per shift — Ahmed Hanif in Shift 2
+// Shift schedule listing names per shift
 $schedule = [
     'shift1' => [
         'label' => '7am till 4pm',
@@ -40,11 +40,11 @@ $schedule = [
     ]
 ];
 
-// Fetch active sessions from active_sessions table with detailed info (15 minutes window)
+// Fetch active sessions from active_sessions table (strictly last 10 minutes)
 $active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, u.dname, u.dusername 
     FROM active_sessions a 
     LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username) OR LOWER(u.dname) = LOWER(a.username))
-    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+    WHERE a.last_active >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
     ORDER BY a.last_active DESC");
 
 $active_users = [];
@@ -71,29 +71,6 @@ if ($active_res) {
                 'role' => $r['role'] ?: 'User',
                 'lastActive' => $r['last_active']
             ];
-        }
-    }
-}
-
-// Fetch recent order activity as secondary online indicator (within last 15 minutes)
-$recent_order_res = mysqli_query($conn, "SELECT DISTINCT qname, completed_by FROM `order` WHERE date >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
-if ($recent_order_res) {
-    while ($r = mysqli_fetch_assoc($recent_order_res)) {
-        foreach ([$r['qname'], $r['completed_by']] as $nameVal) {
-            if (!empty($nameVal) && strtolower($nameVal) !== 'slack bot') {
-                $uKey = strtolower($nameVal);
-                $active_users[$uKey] = date('Y-m-d H:i:s');
-                if (!isset($seen_users[$uKey])) {
-                    $seen_users[$uKey] = true;
-                    $active_users_list[] = [
-                        'user_id' => 0,
-                        'username' => $nameVal,
-                        'displayName' => $nameVal,
-                        'role' => 'CSR',
-                        'lastActive' => date('Y-m-d H:i:s')
-                    ];
-                }
-            }
         }
     }
 }
