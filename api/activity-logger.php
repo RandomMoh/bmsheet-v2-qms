@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Karachi');
 
 function logActivity($conn, $action, $details = '') {
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
@@ -26,6 +27,7 @@ function trackSession($conn) {
     $stmt->execute();
     $stmt->close();
 
-    $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
+    $cutoff = date('Y-m-d H:i:s', time() - 1800);
+    $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < '$cutoff'");
 }
 ?>

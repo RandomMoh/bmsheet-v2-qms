@@ -71,7 +71,6 @@ if ($active_res) {
         $lastAct = $r['last_active'];
         $lastActTime = strtotime($lastAct);
         
-        // Only count session as active if last_active ping was within last 2 minutes (120s)
         if (($nowTime - $lastActTime) > 120 || $lastActTime > ($nowTime + 300)) {
             continue;
         }
@@ -124,6 +123,71 @@ $shiftInfo = [
     'shift3' => ['label' => '10pm till 7am', 'active' => $isShift3Active]
 ];
 
+// Determine shift windows with +1 hour reset grace time
+$today = date('Y-m-d');
+$yesterday = date('Y-m-d', strtotime('-1 day'));
+$tomorrow = date('Y-m-d', strtotime('+1 day'));
+
+$windows = [
+    'shift1' => [
+        'start' => "$today 07:00:00",
+        'cutoff' => "$today 17:00:00",
+        'active' => ($currentTimeVal >= 700 && $currentTimeVal <= 1700)
+    ],
+    'shift2' => [
+        'start' => "$today 12:00:00",
+        'cutoff' => "$today 22:00:00",
+        'active' => ($currentTimeVal >= 1200 && $currentTimeVal <= 2200)
+    ],
+    'shift3' => [
+        'start' => ($currentHour >= 22 ? "$today 22:00:00" : "$yesterday 22:00:00"),
+        'cutoff' => ($currentHour >= 22 ? "$tomorrow 08:00:00" : "$today 08:00:00"),
+        'active' => ($currentTimeVal >= 2200 || $currentTimeVal <= 800)
+    ]
+];
+
+// Map user names/aliases from user table for robust lookup
+$umap = [];
+$ures = mysqli_query($conn, "SELECT dusername, dname FROM `user` WHERE dusername IS NOT NULL OR dname IS NOT NULL");
+if ($ures) {
+    while ($ur = mysqli_fetch_assoc($ures)) {
+        $dn = strtolower(trim($ur['dname'] ?? ''));
+        $du = strtolower(trim($ur['dusername'] ?? ''));
+        if ($dn) $umap[$dn] = $dn;
+        if ($du) $umap[$du] = $dn ?: $du;
+    }
+}
+
+// Fetch query counts for active shift windows
+$shiftCounts = ['shift1' => [], 'shift2' => [], 'shift3' => []];
+
+foreach ($windows as $sKey => $w) {
+    if (!$w['active']) continue;
+
+    $st = mysqli_real_escape_string($conn, $w['start']);
+    $ct = mysqli_real_escape_string($conn, $w['cutoff']);
+
+    $qres = mysqli_query($conn, "SELECT `qname`, COUNT(*) as cnt 
+        FROM `order` 
+        WHERE (`inserted_datetime` >= '$st' AND `inserted_datetime` <= '$ct')
+           OR (`inserted_datetime` IS NULL AND `query-received_datetime` >= '$st' AND `query-received_datetime` <= '$ct')
+        GROUP BY `qname`");
+
+    if ($qres) {
+        while ($qr = mysqli_fetch_assoc($qres)) {
+            $qn = strtolower(trim($qr['qname']));
+            $cnt = intval($qr['cnt']);
+            $shiftCounts[$sKey][$qn] = ($shiftCounts[$sKey][$qn] ?? 0) + $cnt;
+            if (isset($umap[$qn])) {
+                $mappedName = $umap[$qn];
+                if ($mappedName !== $qn) {
+                    $shiftCounts[$sKey][$mappedName] = ($shiftCounts[$sKey][$mappedName] ?? 0) + $cnt;
+                }
+            }
+        }
+    }
+}
+
 $decoratedSchedule = [];
 $stats = [
     'total_csrs' => 0,
@@ -136,6 +200,7 @@ $stats = [
 foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
     $shift = $schedule[$sKey];
     $isActive = $shiftInfo[$sKey]['active'];
+    $windowActive = $windows[$sKey]['active'];
     $decoratedCsrs = [];
 
     foreach ($shift['csrs'] as $csr) {
@@ -166,6 +231,21 @@ foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
             }
         }
 
+        // Calculate queries added in current shift window (resets 1hr after shift end time)
+        $queriesAdded = 0;
+        if ($windowActive) {
+            $queriesAdded = $shiftCounts[$sKey][$uname] ?? $shiftCounts[$sKey][$dname] ?? 0;
+            if ($queriesAdded === 0) {
+                $firstName = strtolower(explode(' ', $csr['name'])[0]);
+                foreach ($shiftCounts[$sKey] as $keyName => $cntVal) {
+                    if (strpos($keyName, $firstName) !== false) {
+                        $queriesAdded = $cntVal;
+                        break;
+                    }
+                }
+            }
+        }
+
         $decoratedCsrs[] = [
             'name' => $csr['name'],
             'username' => $csr['username'],
@@ -174,7 +254,8 @@ foreach (['shift1', 'shift2', 'shift3'] as $sKey) {
             'lastActive' => $lastActiveTime,
             'uptime' => $uptimeStr,
             'uptimeSecs' => $uptimeSecs,
-            'inCurrentShift' => $isActive
+            'inCurrentShift' => $isActive,
+            'queriesAdded' => $queriesAdded
         ];
     }
 

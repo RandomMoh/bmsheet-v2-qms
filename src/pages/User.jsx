@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useRef, useCallback, memo } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
 import SlackThreadViewer from '../SlackThreadViewer'
-import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap } from 'lucide-react'
+import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap, Globe, Timer, BarChart2, Search, X, ExternalLink, FileText, ChevronRight } from 'lucide-react'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -155,31 +156,89 @@ const NAVS = [
   { id: 'profile', label: 'Profile', icon: IC.user },
 ]
 
+function parsePKT(s) {
+  if (!s) return null
+  if (s instanceof Date) return isNaN(s.getTime()) ? null : s
+  if (typeof s === 'number') return new Date(s)
+  let str = String(s).trim()
+  if (!str) return null
+  if (!str.includes('T') && str.includes(' ')) {
+    str = str.replace(' ', 'T')
+  }
+  if (!str.includes('+') && !str.includes('Z') && !/[T\s]\d{2}:\d{2}:\d{2}-\d{2}/.test(str)) {
+    str = str + '+05:00'
+  }
+  const d = new Date(str)
+  return isNaN(d.getTime()) ? null : d
+}
+
 function fmtDt(s) {
   if (!s) return '—'
-  const d = new Date(s); if (isNaN(d)) return s
-  const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]
-  let h = d.getHours(), ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12
-  return `${d.getDate()} ${mon}, ${h}:${String(d.getMinutes()).padStart(2, '0')} ${ap}`
+  const d = parsePKT(s)
+  if (!d) return s
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Karachi',
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    })
+    return formatter.format(d)
+  } catch (e) {
+    return s
+  }
 }
+
 function elapsedStr(from, to = Date.now()) {
-  const ms = (typeof to === 'number' ? to : new Date(to).getTime()) - new Date(from).getTime()
+  const da = parsePKT(from)
+  const db = typeof to === 'number' ? new Date(to) : parsePKT(to)
+  if (!da || !db) return '—'
+  const ms = db.getTime() - da.getTime()
   if (ms < 0) return '—'
   const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24)
   if (d > 0) return `${d}d ${h % 24}h`
   if (h > 0) return `${h}h ${m % 60}m`
   return `${m}m ${s % 60}s`
 }
+
 function nowPKT() {
-  const d = new Date(), p = n => String(n).padStart(2, '0')
-  return { date: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, h: d.getHours() % 12 || 12, m: d.getMinutes(), ap: d.getHours() >= 12 ? 'PM' : 'AM' }
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  })
+  const parts = formatter.formatToParts(new Date())
+  const map = {}
+  parts.forEach(p => map[p.type] = p.value)
+  const hour = parseInt(map.hour, 10)
+  return {
+    date: `${map.year}-${map.month}-${map.day}`,
+    h: hour % 12 || 12,
+    m: parseInt(map.minute, 10),
+    ap: map.dayPeriod ? map.dayPeriod.toUpperCase() : 'AM'
+  }
 }
+
+function getPKTDateStr(d = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' })
+    return formatter.format(d)
+  } catch (e) {
+    return d.toISOString().split('T')[0]
+  }
+}
+
 function diffMin(a, b) {
   if (!a || !b) return null
-  return (new Date(b) - new Date(a)) / 60000
+  const da = parsePKT(a)
+  const db = parsePKT(b)
+  if (!da || !db) return null
+  const diff = (db.getTime() - da.getTime()) / 60000
+  if (isNaN(diff) || diff < 0) return null
+  return diff
 }
+
 function durStr(min) {
-  if (min === null) return '—'
+  if (min === null || min < 0 || isNaN(min)) return '—'
   const h = Math.floor(min / 60), m = Math.round(min % 60)
   return h ? `${h}h ${m}m` : `${m}m`
 }
@@ -329,42 +388,40 @@ function processOrderForUserStats(o, byUser, completedByNames) {
 
   const isDone = !!(o.query_done || (o.status && o.status.toLowerCase() === 'completed'))
 
+  // If entered by a human CSR, completion & breakdown credit strictly goes to the CSR who added the query (enterer).
+  // If entered by a bot/Slack, completion credit goes to the completer.
+  const primaryOwner = (!isBotEntered && enterer !== 'Unassigned') ? enterer : completer
+
   // 1. Manually Entered credit (only if entered by a human, not bot)
   if (!isBotEntered && enterer !== 'Unassigned') {
     initUserStats(byUser, enterer)
     byUser[enterer].enteredTotal++
   }
 
-  // 2. Completion / Done credit (goes to whoever completed it)
-  if (isDone && completer !== 'Unassigned') {
-    initUserStats(byUser, completer)
-    byUser[completer].completedTotal++
-    // If entered by Slack Bot, but completed by human CSR, give CSR completion credit + track botAssigned
-    if (isBotEntered && !isBotCompleted) {
+  // 2. Completion / Done credit
+  if (isDone && primaryOwner !== 'Unassigned') {
+    initUserStats(byUser, primaryOwner)
+    byUser[primaryOwner].completedTotal++
+    if (isBotEntered && !isBotCompleted && completer !== 'Unassigned') {
       byUser[completer].botAssigned++
     }
-    // If completed BY THE BOT ITSELF:
     if (isBotCompleted) {
-      byUser[completer].botCompleted++
+      byUser[primaryOwner].botCompleted++
     }
   }
 
   // 3. Pending credit
-  if (!isDone) {
-    if (completer !== 'Unassigned') {
-      initUserStats(byUser, completer)
-      byUser[completer].pending++
-      if (isBotEntered) byUser[completer].botAssigned++
-    } else if (enterer !== 'Unassigned' && !isBotEntered) {
-      initUserStats(byUser, enterer)
-      byUser[enterer].pending++
+  if (!isDone && primaryOwner !== 'Unassigned') {
+    initUserStats(byUser, primaryOwner)
+    byUser[primaryOwner].pending++
+    if (isBotEntered && completer !== 'Unassigned') {
+      byUser[completer].botAssigned++
     }
   }
 
-  // 4. Involved users for Total Handled & Breakdown metrics
+  // 4. Primary user for Total Handled & Breakdown metrics
   const involvedUsers = new Set()
-  if (enterer !== 'Unassigned' && !isBotEntered) involvedUsers.add(enterer)
-  if (completer !== 'Unassigned') involvedUsers.add(completer)
+  if (primaryOwner !== 'Unassigned') involvedUsers.add(primaryOwner)
 
   const type = (o.type || '').toLowerCase()
   const dept = o.department || 'Unknown'
@@ -753,8 +810,281 @@ function ProjectSelect({ selected, onChange, allProjects }) {
   )
 }
 
+function ProjectOrdersModal({ isOpen, onClose, csrName, country, projectCode, orders }) {
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const filtered = orders.filter(o => {
+    let c = getCountryForProject(o.project_name, o.department)
+    if (c === '—') c = 'Other'
+    let code = `${o.project_name} - ${o.department}`
+
+    const matchesCountry = c === country
+    const matchesProj = !projectCode || code === projectCode
+    if (!matchesCountry || !matchesProj) return false
+
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      const nameMatch = (o['propery-order'] || '').toLowerCase().includes(q)
+      const projMatch = (o.project_name || '').toLowerCase().includes(q)
+      const deptMatch = (o.department || '').toLowerCase().includes(q)
+      const qnameMatch = (o.qname || '').toLowerCase().includes(q)
+      if (!nameMatch && !projMatch && !deptMatch && !qnameMatch) return false
+    }
+    return true
+  })
+
+  let firstSum = 0, firstCount = 0, doneSum = 0, doneCount = 0
+  filtered.forEach(o => {
+    const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+    if (fm !== null) { firstSum += fm; firstCount++ }
+    const dm = diffMin(o['query-received_datetime'], o.query_done)
+    if (dm !== null) { doneSum += dm; doneCount++ }
+  })
+  const avgFirst = firstCount > 0 ? firstSum / firstCount : null
+  const avgDone = doneCount > 0 ? doneSum / doneCount : null
+
+  const modalMarkup = (
+    <div
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 999999,
+        background: 'rgba(9, 14, 26, 0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px 16px',
+        animation: 'fadeIn 0.18s ease forwards'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: '94vw', maxWidth: 1140, maxHeight: '85vh', height: 'auto',
+          background: 'var(--bg-panel)',
+          border: '1.5px solid var(--border-strong)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 24px 60px -10px rgba(0, 0, 0, 0.75)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          animation: 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div style={{
+          padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)',
+          background: 'var(--bg-base)', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 16, flexShrink: 0
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                color: 'var(--accent-primary)', background: 'var(--bg-sunken)',
+                border: '1px solid var(--border-subtle)',
+                padding: '2px 8px', borderRadius: 4, letterSpacing: '0.08em'
+              }}>
+                {country}
+              </span>
+              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {projectCode || `All ${country} Projects`}
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)' }}>
+              Completed orders for CSR <strong style={{ color: 'var(--text-main)' }}>{csrName}</strong> ({filtered.length} {filtered.length === 1 ? 'order' : 'orders'})
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'var(--bg-sunken)', border: '1px solid var(--border-strong)',
+              borderRadius: 6, width: 32, height: 32, display: 'flex',
+              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              color: 'var(--text-main)', flexShrink: 0, transition: 'background 0.12s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-sunken)'}
+            title="Close (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Summary & Search Strip */}
+        <div style={{
+          padding: '10px 24px', background: 'var(--bg-sunken)',
+          borderBottom: '1px solid var(--border-subtle)',
+          display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Orders:</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)' }}>{filtered.length}</span>
+          </div>
+          <div style={{ width: 1, height: 14, background: 'var(--border-subtle)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Timer size={12} style={{ color: '#2dd4bf' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Avg 1st Reply:</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: avgFirst !== null ? '#2dd4bf' : 'var(--text-faint)' }}>{durStr(avgFirst)}</span>
+          </div>
+          <div style={{ width: 1, height: 14, background: 'var(--border-subtle)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <CheckCircle2 size={12} style={{ color: '#60a5fa' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Avg Completion:</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: avgDone !== null ? '#60a5fa' : 'var(--text-faint)' }}>{durStr(avgDone)}</span>
+          </div>
+
+          {/* Search Box */}
+          <div style={{ marginLeft: 'auto', position: 'relative', width: 220 }}>
+            <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+            <input
+              type="text"
+              placeholder="Search order or ID..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '4px 8px 4px 28px',
+                fontSize: 11, background: 'var(--bg-input)',
+                border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)',
+                color: 'var(--text-main)', outline: 'none'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Scrollable Orders Table */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 16px' }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              No orders found matching search query.
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: 12, tableLayout: 'fixed' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-faint)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th style={{ padding: '8px 4px 8px 0', width: 36 }}>#</th>
+                  <th style={{ padding: '8px 10px', width: '26%' }}>Order / Property</th>
+                  <th style={{ padding: '8px 10px', width: '10%' }}>Type</th>
+                  <th style={{ padding: '8px 10px', width: '16%' }}>Received (PKT)</th>
+                  <th style={{ padding: '8px 10px', width: '18%' }}>1st Reply</th>
+                  <th style={{ padding: '8px 10px', width: '18%' }}>Completion</th>
+                  <th style={{ padding: '8px 12px 8px 10px', textAlign: 'left', width: '12%' }}>Entered By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o, idx) => {
+                  const fm = diffMin(o['query-received_datetime'], o['query-first-reply_datetime'])
+                  const dm = diffMin(o['query-received_datetime'], o.query_done)
+
+                  const r1c = fm === null ? 'var(--text-faint)' : fm <= 5 ? '#2dd4bf' : fm <= 30 ? '#f59e0b' : '#f87171'
+                  const lcc = dm === null ? 'var(--text-faint)' : dm <= 120 ? '#2dd4bf' : dm <= 480 ? '#60a5fa' : dm <= 1440 ? '#f59e0b' : '#f87171'
+
+                  return (
+                    <tr
+                      key={o.id || idx}
+                      style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-sunken)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '9px 4px 9px 0', color: 'var(--text-faint)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
+                        {idx + 1}
+                      </td>
+
+                      <td style={{ padding: '9px 10px', fontWeight: 600, color: 'var(--text-main)', overflow: 'hidden' }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o['propery-order'] || o.project_name}>
+                          {o['propery-order'] || o.project_name || '—'}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-faint)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {o.project_name} ({o.department})
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '9px 10px' }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 600,
+                          color: 'var(--text-muted)', background: 'var(--bg-base)',
+                          border: '1px solid var(--border-subtle)', borderRadius: 4,
+                          padding: '1px 6px', whiteSpace: 'nowrap'
+                        }}>
+                          {o.type || 'Standard'}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '9px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
+                        {fmtDt(o['query-received_datetime'])}
+                      </td>
+
+                      <td style={{ padding: '9px 10px', whiteSpace: 'nowrap' }}>
+                        {o['query-first-reply_datetime'] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, color: r1c,
+                              background: `${r1c}18`, border: `1px solid ${r1c}30`,
+                              borderRadius: 10, padding: '1px 6px', fontVariantNumeric: 'tabular-nums'
+                            }}>
+                              {durStr(fm)}
+                            </span>
+                            <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                              ({fmtDt(o['query-first-reply_datetime'])})
+                            </span>
+                          </div>
+                        ) : <span style={{ color: 'var(--text-faint)' }}>—</span>}
+                      </td>
+
+                      <td style={{ padding: '9px 10px', whiteSpace: 'nowrap' }}>
+                        {o.query_done ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, color: lcc,
+                              background: `${lcc}18`, border: `1px solid ${lcc}30`,
+                              borderRadius: 10, padding: '1px 6px', fontVariantNumeric: 'tabular-nums'
+                            }}>
+                              {durStr(dm)}
+                            </span>
+                            <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                              ({fmtDt(o.query_done)})
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600, background: '#f59e0b15', padding: '2px 6px', borderRadius: 4 }}>
+                            In Progress
+                          </span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '9px 12px 9px 10px', textAlign: 'left', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11 }}>
+                        {o.qname ? o.qname.split(' ')[0] : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  return createPortal(modalMarkup, document.body)
+}
+
 function ExpandedCsrRow({ u }) {
   const [loading, setLoading] = useState(true);
+  const [selectedModal, setSelectedModal] = useState(null); // { country, projectCode }
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 500);
@@ -802,72 +1132,166 @@ function ExpandedCsrRow({ u }) {
     return { country, projects: projectsArr, maxMins }
   }).filter(c => c.projects.length > 0)
 
+  const totalOrders = u.orders.length
+
   return (
-    <div style={{ padding: '32px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)', animation: 'fadeUpAnim 0.4s ease forwards' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Performance</h4>
+    <div style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)', padding: '20px 24px', animation: 'fadeUpAnim 0.35s ease forwards' }}>
+      {/* Section header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <BarChart2 size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>Response & Completion Performance</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>{totalOrders} completed {totalOrders === 1 ? 'order' : 'orders'} in total</span>
       </div>
 
       {res.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No completed projects in this period.</div>
+        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: 'var(--bg-panel)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>No completed projects in this period.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20, alignItems: 'start' }}>
-          {res.map(cStats => (
-            <div key={cStats.country} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                 <div style={{ width: 6, height: 20, background: 'var(--accent-primary)', borderRadius: 3 }}></div>
-                 <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cStats.country}</h5>
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, alignItems: 'start' }}>
+          {res.map((cStats) => {
+            const countryTotal = cStats.projects.reduce((s, [, ps]) => s + ps.count, 0)
+            return (
+              <div key={cStats.country} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
+                {/* Country header */}
+                <div
+                  style={{
+                    padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'var(--bg-base)', borderBottom: '1px solid var(--border-subtle)',
+                    cursor: 'pointer', transition: 'background 0.12s'
+                  }}
+                  onClick={() => setSelectedModal({ country: cStats.country, projectCode: null })}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-sunken)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-base)'}
+                  title={`Click to view all ${countryTotal} orders for ${cStats.country}`}
+                >
+                  <Globe size={12} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>{cStats.country}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, color: 'var(--text-muted)',
+                    background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)',
+                    borderRadius: 12, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4
+                  }}>
+                    {countryTotal} {countryTotal === 1 ? 'order' : 'orders'} <ChevronRight size={10} style={{ color: 'var(--text-faint)' }} />
+                  </span>
+                </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 85px 95px', gap: 10, paddingBottom: 8, borderBottom: '1px solid var(--border-subtle)', marginBottom: 10 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>1st Reply</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Completion</span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {cStats.projects.map(([code, ps]) => (
-                  <div key={code} style={{ display: 'grid', gridTemplateColumns: '1.5fr 85px 95px', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', transition: 'border-color 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                       <span style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>{ps.count}</span>
-                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-main)', wordBreak: 'break-word', lineHeight: 1.25 }} title={code}>{code}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
-                       {ps.firstCount > 0 ? (
-                         <>
-                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--status-info)', flexShrink: 0 }}></div>
-                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 5, borderRadius: 3, overflow: 'hidden', minWidth: 12 }}>
-                             <div style={{ width: `${Math.min(100, (ps.firstMins / ps.firstCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-info)', borderRadius: 3 }}></div>
-                           </div>
-                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>{durStr(ps.firstMins / ps.firstCount)}</span>
-                         </>
-                       ) : (
-                         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
-                       )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
-                       {ps.lastCount > 0 ? (
-                         <>
-                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--status-success)', flexShrink: 0 }}></div>
-                           <div style={{ flex: 1, background: 'var(--bg-sunken)', height: 5, borderRadius: 3, overflow: 'hidden', minWidth: 12 }}>
-                             <div style={{ width: `${Math.min(100, (ps.lastMins / ps.lastCount) / cStats.maxMins * 100)}%`, height: '100%', background: 'var(--status-success)', borderRadius: 3 }}></div>
-                           </div>
-                           <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>{durStr(ps.lastMins / ps.lastCount)}</span>
-                         </>
-                       ) : (
-                         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>—</span>
-                       )}
-                    </div>
+                {/* Column headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 95px 105px', padding: '7px 16px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-sunken)' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Project</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }} title="Average 1st Reply Time">
+                    <Timer size={10} style={{ color: 'var(--text-faint)' }} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Avg 1st Reply</span>
                   </div>
-                ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }} title="Average Completion Time">
+                    <CheckCircle2 size={10} style={{ color: 'var(--text-faint)' }} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Avg Completion</span>
+                  </div>
+                </div>
+
+                {/* Rows */}
+                <div>
+                  {cStats.projects.map(([code, ps], ri) => {
+                    const avg1st = ps.firstCount > 0 ? ps.firstMins / ps.firstCount : null
+                    const avgLast = ps.lastCount > 0 ? ps.lastMins / ps.lastCount : null
+                    const r1c = avg1st === null ? 'var(--text-faint)'
+                      : avg1st <= 5 ? '#2dd4bf'
+                      : avg1st <= 30 ? '#f59e0b'
+                      : '#f87171'
+                    const lc = avgLast === null ? 'var(--text-faint)'
+                      : avgLast <= 120 ? '#2dd4bf'
+                      : avgLast <= 480 ? '#60a5fa'
+                      : avgLast <= 1440 ? '#f59e0b'
+                      : '#f87171'
+                    const isLast = ri === cStats.projects.length - 1
+                    return (
+                      <div key={code}
+                        style={{
+                          display: 'grid', gridTemplateColumns: '1fr 95px 105px',
+                          alignItems: 'center', padding: '9px 16px',
+                          borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
+                          background: 'var(--bg-panel)',
+                          cursor: 'pointer',
+                          transition: 'background 0.12s'
+                        }}
+                        onClick={() => setSelectedModal({ country: cStats.country, projectCode: code })}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-sunken)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-panel)'}
+                        title={`Click to view all ${ps.count} orders for ${code}`}
+                      >
+                        {/* Project name + count */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                          <span style={{
+                            flexShrink: 0, fontSize: 10, fontWeight: 700,
+                            color: 'var(--text-muted)', background: 'var(--bg-base)',
+                            border: '1px solid var(--border-subtle)', borderRadius: 4,
+                            padding: '1px 6px', fontVariantNumeric: 'tabular-nums'
+                          }}>{ps.count}</span>
+                          <span style={{
+                            fontSize: 12, fontWeight: 500, color: 'var(--text-main)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            letterSpacing: '-0.01em'
+                          }} title={code}>{code}</span>
+                        </div>
+                        {/* 1st Reply value */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          {avg1st !== null ? (
+                            <span style={{
+                              fontSize: 11, fontWeight: 700, color: r1c,
+                              background: `${r1c}15`, border: `1px solid ${r1c}30`,
+                              borderRadius: 12, padding: '2px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'
+                            }}>
+                              {durStr(avg1st)}
+                            </span>
+                          ) : <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>—</span>}
+                        </div>
+                        {/* Completion value */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          {avgLast !== null ? (
+                            <span style={{
+                              fontSize: 11, fontWeight: 700, color: lc,
+                              background: `${lc}15`, border: `1px solid ${lc}30`,
+                              borderRadius: 12, padding: '2px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'
+                            }}>
+                              {durStr(avgLast)}
+                            </span>
+                          ) : <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>—</span>}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
+      )}
+
+      {/* Legend */}
+      <div style={{ marginTop: 14, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, color: 'var(--text-faint)', fontWeight: 600 }}>Time thresholds:</span>
+        {[['#2dd4bf','≤5m / ≤2h (Fast)'],['#60a5fa','≤8h (Good)'],['#f59e0b','≤30m / ≤24h (Moderate)'],['#f87171','>30m / >24h (Slow)']].map(([c,l]) => (
+          <span key={l} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: c, display: 'inline-block' }} />
+            <span>{l}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* Interactive Project Orders Modal Popup */}
+      {selectedModal && (
+        <ProjectOrdersModal
+          isOpen={!!selectedModal}
+          onClose={() => setSelectedModal(null)}
+          csrName={u.name}
+          country={selectedModal.country}
+          projectCode={selectedModal.projectCode}
+          orders={u.orders}
+        />
       )}
     </div>
   )
 }
+
+
 
 function CsrShiftsView({ API }) {
   const shiftsQuery = useQuery({
@@ -907,7 +1331,7 @@ function CsrShiftsView({ API }) {
             PKT: {data?.pkt_time || '—'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-            <Radio size={12} /> Auto-syncing every 10s
+            <Radio size={12} /> Auto-syncing every 10s {/* v2 */}
           </div>
         </div>
       </div>
@@ -1034,9 +1458,20 @@ function CsrShiftsView({ API }) {
 
                   return (
                     <div key={c.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: badgeBg, borderRadius: 'var(--radius-md)', border: `1px solid ${c.statusState === 'offline_in_shift' ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle)'}`, transition: 'all 0.2s ease' }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <UserIcon size={14} style={{ color: badgeColor, opacity: 0.8 }} />
-                        {c.name}
+                        <span>{c.name}</span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700,
+                          background: 'var(--bg-panel)', border: '1px solid var(--border-strong)',
+                          color: (c.queriesAdded > 0) ? 'var(--accent-primary)' : 'var(--text-faint)',
+                          padding: '1px 7px', borderRadius: 10,
+                          fontVariantNumeric: 'tabular-nums',
+                          display: 'inline-flex', alignItems: 'center', gap: 3
+                        }} title="Queries added by CSR during current shift cycle">
+                          <FileText size={10} style={{ opacity: 0.7 }} />
+                          {c.queriesAdded || 0} {c.queriesAdded === 1 ? 'query' : 'queries'}
+                        </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {c.isOnline && c.uptime && (
@@ -1658,7 +2093,7 @@ export default function CSRPortal() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
             </button>
             <h1>{SECTION_TITLES[section]}</h1>
-            {section === 'current' && <span className="topbar-sub">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>}
+            {section === 'current' && <span className="topbar-sub">{new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', weekday: 'long', month: 'short', day: 'numeric' })}</span>}
           </div>
           <div className="topbar-actions">
             {notifPerm === 'default' && (
@@ -1691,13 +2126,13 @@ export default function CSRPortal() {
                   </div>
                   <ProjectSelect selected={dashSelectedProjects} onChange={setDashSelectedProjects} allProjects={PROJECTS} />
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, paddingBottom: 2 }}>
-                    <button onClick={() => { const d = new Date().toISOString().split('T')[0]; setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                    <button onClick={() => { const d = getPKTDateStr(); setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
                       Today
                     </button>
-                    <button onClick={() => { const y = new Date(); y.setDate(y.getDate() - 1); const d = y.toISOString().split('T')[0]; setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                    <button onClick={() => { const y = new Date(); y.setDate(y.getDate() - 1); const d = getPKTDateStr(y); setDashFrom(d); setDashTo(d) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
                       Yesterday
                     </button>
-                    <button onClick={() => { const now = new Date(); const f = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]; const t = now.toISOString().split('T')[0]; setDashFrom(f); setDashTo(t) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
+                    <button onClick={() => { const now = new Date(); const f = new Date(now.getFullYear(), now.getMonth(), 1); setDashFrom(getPKTDateStr(f)); setDashTo(getPKTDateStr(now)) }} className="btn btn-ghost btn-sm" style={{ height: 38, fontSize: 12 }}>
                       This Month
                     </button>
                     {(dashFrom || dashTo || dashSelectedProjects.length > 0) && (
