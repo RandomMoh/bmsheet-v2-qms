@@ -53,6 +53,15 @@ $sql = "UPDATE `order` SET `reminder_hours` = '$newReminder' WHERE `id` = '$id'"
 
 if (mysqli_query($conn, $sql)) {
     logActivity('Extend Time', "Extended time by $extra hours for order #$id");
+
+    $changedBy = isset($body['changed_by']) ? mysqli_real_escape_string($conn, trim($body['changed_by'])) : (isset($_SESSION['username']) ? $_SESSION['username'] : 'CSR');
+    $nowStr = date('Y-m-d H:i:s');
+    $oldStr = mysqli_real_escape_string($conn, $currentHours . ' hours');
+    $newStr = mysqli_real_escape_string($conn, round($newReminder, 1) . " hours (+$extra hrs)");
+    
+    mysqli_query($conn, "INSERT INTO `query_history` (`order_id`, `changed_by`, `action`, `field_changed`, `old_value`, `new_value`, `timestamp_pkt`)
+        VALUES ($id, '$changedBy', 'Time Extended', 'reminder_hours', '$oldStr', '$newStr', '$nowStr')");
+
     echo json_encode(['status' => 'success', 'message' => 'Deadline extended successfully']);
 }
 else {

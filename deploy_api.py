@@ -1,7 +1,7 @@
 import pexpect
 import sys
 
-cmd = "rsync -avz api/ bmsheetv2benchma@bmsheet-v2.benchmarkstudio.biz:public_html/qms_react/api/"
+cmd = "rsync -avz --exclude 'sessions' --exclude 'sessions/' --exclude '*.log' --exclude '*.txt' api/ bmsheetv2benchma@bmsheet-v2.benchmarkstudio.biz:public_html/qms_react/api/"
 
 print(f"Running command: {cmd}")
 child = pexpect.spawn(cmd, encoding='utf-8')

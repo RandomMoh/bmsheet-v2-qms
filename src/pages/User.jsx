@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
 import SlackThreadViewer from '../SlackThreadViewer'
+import QueryTimelineModal from '../QueryTimelineModal'
 import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap, Globe, Timer, BarChart2, Search, X, ExternalLink, FileText, ChevronRight } from 'lucide-react'
 
 
@@ -281,88 +282,7 @@ function classifyOrder(o, byUser, firstOwner, completionOwner) {
   processOrderForUserStats(o, byUser, [])
 }
 
-const API_URL = import.meta.env.VITE_API_BASE_URL
-function QueryTimeline({ order, onClose }) {
-  const [events, setEvents] = useState(null)
-  useEffect(() => {
-    fetch(`${API_URL}/get-query-history.php?order_id=${order.id}`)
-      .then(r => r.json())
-      .then(d => setEvents(d.status === 'success' ? d.data : []))
-      .catch(() => setEvents([]))
-  }, [order.id])
-
-  const getDotClass = (action) => {
-    const a = (action || '').toLowerCase()
-    if (a.includes('created')) return 'created'
-    if (a.includes('completed') || a.includes('mark comp')) return 'completed'
-    if (a.includes('issue') && !a.includes('resolved')) return 'issue'
-    if (a.includes('resolved') || a.includes('resolve')) return 'resolved'
-    if (a.includes('assigned') || a.includes('assign')) return 'assigned'
-    return 'field'
-  }
-  const getBadgeClass = (action) => `badge-${getDotClass(action)}`
-  const fmtTime = (ts) => {
-    if (!ts) return '—'
-    const d = new Date(ts)
-    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]
-    let h = d.getHours(), ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12
-    return `${d.getDate()} ${mon} ${d.getFullYear()}, ${h}:${String(d.getMinutes()).padStart(2,'0')} ${ap}`
-  }
-  const fieldLabel = (f) => {
-    const m = { status: 'Status', completed_by: 'Assigned To', instruction: 'Note', project_name: 'Project', department: 'Department' }
-    return m[f] || f
-  }
-  return (
-    <>
-      <div className="timeline-drawer-overlay" onClick={onClose} />
-      <div className="timeline-drawer" role="dialog">
-        <div className="timeline-drawer-header">
-          <div>
-            <h2>Query Timeline</h2>
-            <p>Order #{order.id} &nbsp;·&nbsp; {order['propery-order'] || '—'}</p>
-          </div>
-          <button className="timeline-close-btn" onClick={onClose}>
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="timeline-body">
-          {events === null ? (
-            <div className="timeline-empty"><p>Loading…</p></div>
-          ) : events.length === 0 ? (
-            <div className="timeline-empty">
-              <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
-              <p>No history recorded yet for this query.</p>
-              <p style={{ fontSize: 12, opacity: 0.6 }}>New changes will appear here going forward.</p>
-            </div>
-          ) : (
-            <div className="timeline-track">
-              {events.map((ev, i) => (
-                <div key={ev.id} className="timeline-event" style={{ animationDelay: `${i * 0.05}s` }}>
-                  <div className={`timeline-dot ${getDotClass(ev.action)}`} />
-                  <div className="timeline-card">
-                    <div className="timeline-card-top">
-                      <span className={`timeline-action-badge ${getBadgeClass(ev.action)}`}>{ev.action}</span>
-                      <span className="timeline-time">{fmtTime(ev.timestamp_pkt)}</span>
-                    </div>
-                    {ev.changed_by && <div className="timeline-by">by <strong>{ev.changed_by}</strong></div>}
-                    {(ev.old_value !== null || ev.new_value) && (
-                      <div className="timeline-diff">
-                        <span className="timeline-diff-label">{fieldLabel(ev.field_changed)}:</span>
-                        {ev.old_value && <span className="timeline-diff-old">{ev.old_value}</span>}
-                        {ev.old_value && <span className="timeline-diff-arrow">→</span>}
-                        <span className="timeline-diff-new">{ev.new_value || '—'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
+const QueryTimeline = QueryTimelineModal
 
 function processOrderForUserStats(o, byUser, completedByNames) {
   let enterer = (o.qname || '').trim()
