@@ -37,8 +37,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#3b82f6',
-      bg: 'rgba(59, 130, 246, 0.12)',
-      border: 'rgba(59, 130, 246, 0.3)'
+      bg: 'rgba(59, 130, 246, 0.16)',
+      border: 'rgba(59, 130, 246, 0.4)',
+      cardBg: 'rgba(59, 130, 246, 0.05)',
+      cardBorder: 'rgba(59, 130, 246, 0.25)',
+      glow: '0 0 16px rgba(59, 130, 246, 0.35)'
     }
   }
   if (a.includes('reply')) {
@@ -51,8 +54,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#06b6d4',
-      bg: 'rgba(6, 182, 212, 0.12)',
-      border: 'rgba(6, 182, 212, 0.3)'
+      bg: 'rgba(6, 182, 212, 0.16)',
+      border: 'rgba(6, 182, 212, 0.4)',
+      cardBg: 'rgba(6, 182, 212, 0.05)',
+      cardBorder: 'rgba(6, 182, 212, 0.25)',
+      glow: '0 0 16px rgba(6, 182, 212, 0.35)'
     }
   }
   if (a.includes('completed') || a.includes('mark comp')) {
@@ -65,8 +71,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.12)',
-      border: 'rgba(16, 185, 129, 0.3)'
+      bg: 'rgba(16, 185, 129, 0.16)',
+      border: 'rgba(16, 185, 129, 0.4)',
+      cardBg: 'rgba(16, 185, 129, 0.05)',
+      cardBorder: 'rgba(16, 185, 129, 0.25)',
+      glow: '0 0 16px rgba(16, 185, 129, 0.35)'
     }
   }
   if (a.includes('issue') && !a.includes('resolved')) {
@@ -81,8 +90,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#ef4444',
-      bg: 'rgba(239, 68, 68, 0.12)',
-      border: 'rgba(239, 68, 68, 0.3)'
+      bg: 'rgba(239, 68, 68, 0.16)',
+      border: 'rgba(239, 68, 68, 0.4)',
+      cardBg: 'rgba(239, 68, 68, 0.05)',
+      cardBorder: 'rgba(239, 68, 68, 0.25)',
+      glow: '0 0 16px rgba(239, 68, 68, 0.35)'
     }
   }
   if (a.includes('resolved') || a.includes('resolve')) {
@@ -96,8 +108,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#8b5cf6',
-      bg: 'rgba(139, 92, 246, 0.12)',
-      border: 'rgba(139, 92, 246, 0.3)'
+      bg: 'rgba(139, 92, 246, 0.16)',
+      border: 'rgba(139, 92, 246, 0.4)',
+      cardBg: 'rgba(139, 92, 246, 0.05)',
+      cardBorder: 'rgba(139, 92, 246, 0.25)',
+      glow: '0 0 16px rgba(139, 92, 246, 0.35)'
     }
   }
   if (a.includes('extended') || a.includes('time')) {
@@ -111,8 +126,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#f59e0b',
-      bg: 'rgba(245, 158, 11, 0.12)',
-      border: 'rgba(245, 158, 11, 0.3)'
+      bg: 'rgba(245, 158, 11, 0.16)',
+      border: 'rgba(245, 158, 11, 0.4)',
+      cardBg: 'rgba(245, 158, 11, 0.05)',
+      cardBorder: 'rgba(245, 158, 11, 0.25)',
+      glow: '0 0 16px rgba(245, 158, 11, 0.35)'
     }
   }
   if (a.includes('assigned') || a.includes('assign')) {
@@ -126,8 +144,11 @@ function getEventMeta(action = '') {
         </svg>
       ),
       color: '#6366f1',
-      bg: 'rgba(99, 102, 241, 0.12)',
-      border: 'rgba(99, 102, 241, 0.3)'
+      bg: 'rgba(99, 102, 241, 0.16)',
+      border: 'rgba(99, 102, 241, 0.4)',
+      cardBg: 'rgba(99, 102, 241, 0.05)',
+      cardBorder: 'rgba(99, 102, 241, 0.25)',
+      glow: '0 0 16px rgba(99, 102, 241, 0.35)'
     }
   }
   return {
@@ -139,8 +160,11 @@ function getEventMeta(action = '') {
       </svg>
     ),
     color: '#ec4899',
-    bg: 'rgba(236, 72, 153, 0.12)',
-    border: 'rgba(236, 72, 153, 0.3)'
+    bg: 'rgba(236, 72, 153, 0.16)',
+    border: 'rgba(236, 72, 153, 0.4)',
+    cardBg: 'rgba(236, 72, 153, 0.05)',
+    cardBorder: 'rgba(236, 72, 153, 0.25)',
+    glow: '0 0 16px rgba(236, 72, 153, 0.35)'
   }
 }
 
@@ -185,7 +209,7 @@ export default function QueryTimelineModal({ order, onClose }) {
         }
         setLoading(false)
       })
-      .catch(err => {
+      .catch(() => {
         if (!mounted) return
         setEvents([])
         setLoading(false)
@@ -193,7 +217,6 @@ export default function QueryTimelineModal({ order, onClose }) {
     return () => { mounted = false }
   }, [order.id])
 
-  // ESC key handler to close modal
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose()
@@ -204,16 +227,13 @@ export default function QueryTimelineModal({ order, onClose }) {
 
   const targetOrder = fullOrderData || order
 
-  // Filtered timeline events
   const filteredEvents = useMemo(() => {
     return events.filter(ev => {
       const meta = getEventMeta(ev.action)
-      // Category tab filtering
       if (filterTab === 'status' && !['completed', 'issue', 'resolved', 'assigned', 'created'].includes(meta.type)) return false
       if (filterTab === 'fields' && meta.type !== 'field' && meta.type !== 'extended') return false
       if (filterTab === 'notes' && !ev.field_changed?.includes('instruction') && !ev.action?.toLowerCase().includes('note')) return false
 
-      // Search text filtering
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
         const matchUser = (ev.changed_by || '').toLowerCase().includes(q)
@@ -227,7 +247,6 @@ export default function QueryTimelineModal({ order, onClose }) {
     })
   }, [events, filterTab, searchQuery])
 
-  // Calculate summary metrics
   const firstReplyDuration = timeDifference(targetOrder['query-received_datetime'], targetOrder['query-first-reply_datetime'])
   const completionDuration = timeDifference(targetOrder['query-received_datetime'], targetOrder['query_done'] || targetOrder['query_manual_done'])
 
@@ -245,15 +264,15 @@ export default function QueryTimelineModal({ order, onClose }) {
               <h2 id="vtm-title" className="vtm-order-property">
                 {targetOrder['propery-order'] || 'Order History Timeline'}
               </h2>
-              <span className="vtm-status-pill" style={{ color: statusColor, backgroundColor: `${statusColor}18`, borderColor: `${statusColor}35` }}>
-                <span className="vtm-status-dot" style={{ backgroundColor: statusColor }} />
+              <span className="vtm-status-pill" style={{ color: statusColor, backgroundColor: `${statusColor}22`, borderColor: `${statusColor}55` }}>
+                <span className="vtm-status-dot" style={{ backgroundColor: statusColor, boxShadow: `0 0 8px ${statusColor}` }} />
                 {targetOrder.status || 'Pending'}
               </span>
             </div>
             <div className="vtm-subtitle-row">
-              {targetOrder.project_name && <span className="vtm-meta-chip">{targetOrder.project_name}</span>}
-              {targetOrder.department && <span className="vtm-meta-chip">{targetOrder.department}</span>}
-              {targetOrder.type && <span className="vtm-meta-chip">{targetOrder.type}</span>}
+              {targetOrder.project_name && <span className="vtm-meta-chip project-chip">{targetOrder.project_name}</span>}
+              {targetOrder.department && <span className="vtm-meta-chip dept-chip">{targetOrder.department}</span>}
+              {targetOrder.type && <span className="vtm-meta-chip type-chip">{targetOrder.type}</span>}
               {targetOrder.communication_medium && <span className="vtm-meta-chip medium-chip">Channel: {targetOrder.communication_medium}</span>}
             </div>
           </div>
@@ -264,31 +283,31 @@ export default function QueryTimelineModal({ order, onClose }) {
           </button>
         </div>
 
-        {/* Executive Summary Row */}
+        {/* Executive Summary Cards */}
         <div className="vtm-summary-bar">
-          <div className="vtm-summary-card">
+          <div className="vtm-summary-card card-entered">
             <span className="vtm-summary-label">Query Entered By</span>
-            <span className="vtm-summary-val highlight">{targetOrder.qname || '—'}</span>
+            <span className="vtm-summary-val val-blue">{targetOrder.qname || '—'}</span>
             <span className="vtm-summary-sub">{formatDateTime(targetOrder['query-received_datetime'])}</span>
           </div>
 
-          <div className="vtm-summary-card">
-            <span className="vtm-summary-label">1st Reply Time</span>
+          <div className="vtm-summary-card card-reply">
+            <span className="vtm-summary-label">1st Reply SLA</span>
             <span className="vtm-summary-val">
               {firstReplyDuration ? (
                 <span className="vtm-reply-badge">{firstReplyDuration}</span>
               ) : (
-                'Pending'
+                <span className="vtm-pending-tag">Pending</span>
               )}
             </span>
             <span className="vtm-summary-sub">{formatDateTime(targetOrder['query-first-reply_datetime'])}</span>
           </div>
 
-          <div className="vtm-summary-card">
+          <div className="vtm-summary-card card-completed">
             <span className="vtm-summary-label">Completed / Assigned</span>
-            <span className="vtm-summary-val highlight">{targetOrder.completed_by || 'Unassigned'}</span>
+            <span className="vtm-summary-val val-green">{targetOrder.completed_by || 'Unassigned'}</span>
             <span className="vtm-summary-sub">
-              {completionDuration ? `Total time: ${completionDuration}` : (targetOrder.status === 'completed' ? formatDateTime(targetOrder.query_done) : 'In Queue')}
+              {completionDuration ? `Total time: ${completionDuration}` : (targetOrder.status === 'completed' ? formatDateTime(targetOrder.query_done) : 'Active in Queue')}
             </span>
           </div>
         </div>
@@ -333,7 +352,7 @@ export default function QueryTimelineModal({ order, onClose }) {
           {loading ? (
             <div className="vtm-loading-state">
               <div className="vtm-spinner" />
-              <span>Fetching query audit timeline...</span>
+              <span>Loading query history timeline...</span>
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="vtm-empty-state">
@@ -355,13 +374,13 @@ export default function QueryTimelineModal({ order, onClose }) {
 
                 return (
                   <div key={ev.id || index} className="vtm-event-node" style={{ animationDelay: `${index * 0.04}s` }}>
-                    {/* Node Dot with Custom Icon */}
-                    <div className="vtm-node-dot" style={{ backgroundColor: meta.bg, borderColor: meta.border, color: meta.color }}>
+                    {/* Node Dot with Custom Icon and Glow */}
+                    <div className="vtm-node-dot" style={{ backgroundColor: meta.bg, borderColor: meta.border, color: meta.color, boxShadow: meta.glow }}>
                       {meta.icon}
                     </div>
 
-                    {/* Timeline Event Card */}
-                    <div className="vtm-card">
+                    {/* Timeline Event Card with Custom Color Accent Border and Background Tint */}
+                    <div className="vtm-card" style={{ backgroundColor: meta.cardBg, borderColor: meta.cardBorder }}>
                       <div className="vtm-card-header">
                         <div className="vtm-action-wrap">
                           <span className="vtm-action-pill" style={{ color: meta.color, backgroundColor: meta.bg, borderColor: meta.border }}>
@@ -381,7 +400,7 @@ export default function QueryTimelineModal({ order, onClose }) {
 
                       {/* Changed By User line */}
                       <div className="vtm-user-row">
-                        <span className="vtm-user-avatar">
+                        <span className="vtm-user-avatar" style={{ backgroundColor: meta.color }}>
                           {(ev.changed_by || 'CSR').charAt(0).toUpperCase()}
                         </span>
                         <span className="vtm-user-name">{ev.changed_by || 'CSR / System'}</span>
@@ -390,9 +409,9 @@ export default function QueryTimelineModal({ order, onClose }) {
 
                       {/* Event Details / Diff Viewer */}
                       {isDiff && (
-                        <div className="vtm-diff-box">
+                        <div className="vtm-diff-box" style={{ borderColor: meta.cardBorder }}>
                           {ev.field_changed && (
-                            <div className="vtm-field-tag">{fieldName}</div>
+                            <div className="vtm-field-tag" style={{ color: meta.color }}>{fieldName}</div>
                           )}
                           <div className="vtm-diff-content">
                             {ev.old_value && (
@@ -402,7 +421,7 @@ export default function QueryTimelineModal({ order, onClose }) {
                               <span className="vtm-diff-arrow">→</span>
                             )}
                             {ev.new_value && (
-                              <span className="vtm-diff-new">{ev.new_value}</span>
+                              <span className="vtm-diff-new" style={{ color: meta.color }}>{ev.new_value}</span>
                             )}
                           </div>
                         </div>
