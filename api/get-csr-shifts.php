@@ -56,7 +56,7 @@ $schedule = [
 ];
 
 // Fetch active sessions from active_sessions table
-$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role, a.last_active, a.login_time, u.dname, u.dusername 
+$active_res = mysqli_query($conn, "SELECT a.user_id, a.username, a.role as session_role, a.last_active, a.login_time, u.dname, u.dusername, u.role as db_role 
     FROM active_sessions a 
     LEFT JOIN user u ON (u.d_id = a.user_id OR LOWER(u.dusername) = LOWER(a.username) OR LOWER(u.dname) = LOWER(a.username))
     ORDER BY a.last_active DESC");
@@ -94,11 +94,14 @@ if ($active_res) {
         $uKey = strtolower($r['dusername'] ?: $r['username']);
         if (!isset($seen_users[$uKey])) {
             $seen_users[$uKey] = true;
+            $rawRole = !empty($r['db_role']) ? $r['db_role'] : (!empty($r['session_role']) ? $r['session_role'] : 'CSR');
+            $cleanRole = (strtolower($rawRole) === 'user' || strtolower($rawRole) === 'csr') ? 'CSR' : ucfirst($rawRole);
+
             $active_users_list[] = [
                 'user_id' => $r['user_id'],
                 'username' => $r['dusername'] ?: $r['username'],
                 'displayName' => $r['dname'] ?: $r['username'],
-                'role' => $r['role'] ?: 'User',
+                'role' => $cleanRole,
                 'lastActive' => $r['last_active'],
                 'loginTime' => $loginTime,
                 'uptime' => $uptimeStr,

@@ -57,19 +57,19 @@ if (!$q) {
 if (mysqli_num_rows($q) > 0) {
     $row = mysqli_fetch_assoc($q);
     if (checkPassword($password, $row['dpassword'], $row['plain_password'])) {
+        $userRole = !empty($row['role']) ? $row['role'] : 'CSR';
         $_SESSION['auth'] = true;
-        $_SESSION['role'] = 'user';
+        $_SESSION['role'] = $userRole;
         $_SESSION['user_id'] = $row['d_id'];
         $_SESSION['username'] = $row['dname'];
         
         $userId = (int)$row['d_id'];
         $dusername = $row['dusername'];
-        $userRole = $row['role'] ?? 'CSR';
         $sessId = session_id() ?: ('sess_' . $userId);
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
         $now = date('Y-m-d H:i:s');
 
-        // Immediately update active_sessions on login and reset login_time
+        // Immediately update active_sessions on login with official role from user table
         $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
             VALUES (?, ?, ?, ?, ?, ?, ?) 
             ON DUPLICATE KEY UPDATE `last_active` = ?, `login_time` = ?, `username` = ?, `role` = ?, `session_id` = ?, `ip_address` = ?");
@@ -79,7 +79,7 @@ if (mysqli_num_rows($q) > 0) {
             $stmt->close();
         }
 
-        logActivity('Login', ($row['role'] ?? 'CSR') . ' logged in: ' . $row['dname']);
+        logActivity('Login', $userRole . ' logged in: ' . $row['dname']);
         echo json_encode([
             "status" => "success",
             "role" => "user",
@@ -88,7 +88,7 @@ if (mysqli_num_rows($q) > 0) {
                 "username" => $row['dusername'],
                 "name" => $row['dname'],
                 "project_filter" => $row['project_filter'],
-                "userRole" => $row['role'] ?? 'CSR'
+                "userRole" => $userRole
             ]
         ]);
         exit();

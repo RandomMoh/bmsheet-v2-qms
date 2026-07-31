@@ -10,6 +10,15 @@ $sessId = session_id() ?: ('sess_' . $userId);
 $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 $now = date('Y-m-d H:i:s');
 
+if ($userId > 0) {
+    $uCheck = mysqli_query($conn, "SELECT role FROM `user` WHERE `d_id` = $userId LIMIT 1");
+    if ($uCheck && $uRow = mysqli_fetch_assoc($uCheck)) {
+        if (!empty($uRow['role'])) {
+            $role = $uRow['role'];
+        }
+    }
+}
+
 if ($userId > 0 && !empty($username)) {
     $stmt = $conn->prepare("INSERT INTO `active_sessions` (`user_id`, `username`, `role`, `session_id`, `last_active`, `login_time`, `ip_address`) 
         VALUES (?, ?, ?, ?, ?, ?, ?) 
