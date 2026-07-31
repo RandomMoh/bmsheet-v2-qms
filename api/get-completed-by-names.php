@@ -10,12 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 header('Content-Type: application/json; charset=UTF-8');
 mysqli_set_charset($conn, 'utf8mb4');
 
-$res = mysqli_query($conn, "SELECT DISTINCT completed_by FROM `order` WHERE completed_by IS NOT NULL AND TRIM(completed_by) != ''");
+$res = mysqli_query($conn, "SELECT DISTINCT name FROM (
+    SELECT completed_by AS name FROM `order` WHERE completed_by IS NOT NULL AND TRIM(completed_by) != ''
+    UNION
+    SELECT qname AS name FROM `order` WHERE qname IS NOT NULL AND TRIM(qname) != ''
+) AS names");
+
 if (!$res) { echo json_encode([]); exit(); }
 
 $rawNames = [];
 while ($row = mysqli_fetch_assoc($res)) {
-    $rawNames[] = trim($row['completed_by']);
+    $name = trim($row['name']);
+    if (!empty($name)) {
+        $rawNames[] = $name;
+    }
 }
 
 $ures = mysqli_query($conn, "SELECT dusername, dname FROM `user`");
@@ -66,3 +74,4 @@ usort($final, function($a, $b) {
 
 echo json_encode($final);
 mysqli_close($conn);
+?>

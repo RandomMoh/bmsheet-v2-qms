@@ -379,12 +379,16 @@ function processOrderForUserStats(o, byUser, completedByNames) {
     if (match) completer = match.display
   }
 
-  const entererLower = enterer.toLowerCase()
-  const mediumLower = (o.communication_medium || '').toLowerCase()
-  const isBotEntered = entererLower.includes('bot') || entererLower.includes('slack') || mediumLower === 'slack'
+  const entererLower = enterer.toLowerCase().trim()
+  const completerLower = completer.toLowerCase().trim()
 
-  const completerLower = completer.toLowerCase()
-  const isBotCompleted = completerLower.includes('bot') || completerLower.includes('slack')
+  const isBotName = (name) => {
+    if (!name || name === 'unassigned') return false
+    return name.includes('bot') || name === 'slack' || name === 'system'
+  }
+
+  const isBotEntered = isBotName(entererLower)
+  const isBotCompleted = isBotName(completerLower)
 
   const isDone = !!(o.query_done || (o.status && o.status.toLowerCase() === 'completed'))
 
