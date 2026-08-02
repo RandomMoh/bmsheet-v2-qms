@@ -1618,6 +1618,72 @@ export default function CSRPortal() {
     if (b.name === 'Unassigned') return -1;
     return b.completedTotal - a.completedTotal;
   }), [dashReport])
+
+  const shiftGroupedDash = useMemo(() => {
+    const shiftDefs = [
+      {
+        id: 'shift1',
+        title: 'Shift 1 — Morning (7:00 AM – 4:00 PM)',
+        color: '#0284c7',
+        bg: 'rgba(2, 132, 199, 0.06)',
+        border: 'rgba(2, 132, 199, 0.2)',
+        members: ['laiba azeem', 'rafia', 'amna zaheer', 'alishba', 'khadija', 'romaisa']
+      },
+      {
+        id: 'shift2',
+        title: 'Shift 2 — Evening (12:00 PM – 9:00 PM)',
+        color: '#d97706',
+        bg: 'rgba(217, 119, 6, 0.06)',
+        border: 'rgba(217, 119, 6, 0.2)',
+        members: ['ahmed hanif', 'hafsa', 'ayesha waris', 'saman', 'aman zahra', 'kaneez fatima', 'bisma', 'mehak ashik', 'iqra ibrahim']
+      },
+      {
+        id: 'shift3',
+        title: 'Shift 3 — Night (10:00 PM – 7:00 AM)',
+        color: '#8b5cf6',
+        bg: 'rgba(139, 92, 246, 0.06)',
+        border: 'rgba(139, 92, 246, 0.2)',
+        members: ['fatima zahra', 'shiza', 'muteeba', 'ayesha owais']
+      },
+      {
+        id: 'other',
+        title: 'Management & Others',
+        color: '#64748b',
+        bg: 'rgba(100, 116, 139, 0.06)',
+        border: 'rgba(100, 116, 139, 0.2)',
+        members: []
+      }
+    ]
+
+    const groups = shiftDefs.map(g => ({
+      ...g,
+      users: [],
+      totHandled: 0,
+      totDone: 0,
+      totPending: 0
+    }))
+
+    dashSorted.forEach(u => {
+      const norm = (u.name || '').toLowerCase().trim()
+      let foundShiftIdx = 3 // default to 'other'
+
+      for (let i = 0; i < 3; i++) {
+        const mems = groups[i].members
+        if (mems.some(m => norm.includes(m) || m.includes(norm.replace(' csr', '').trim()))) {
+          foundShiftIdx = i
+          break
+        }
+      }
+
+      const targetGrp = groups[foundShiftIdx]
+      targetGrp.users.push(u)
+      targetGrp.totHandled += (u.total || 0)
+      targetGrp.totDone += (u.completedTotal || 0)
+      targetGrp.totPending += (u.pending || 0)
+    })
+
+    return groups.filter(g => g.users.length > 0)
+  }, [dashSorted])
   const dashAgg = useMemo(() => {
     let totComp = 0, totPend = 0, totNew = 0, totAmend = 0
     filteredDashOrders.forEach(o => {
@@ -2153,83 +2219,101 @@ export default function CSRPortal() {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <h3 style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-main)' }}>Team Overview (Shift-wise Roster)</h3>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Grouped by shift roster (PKT)</span>
+                </div>
+
                 {dashQuery.isLoading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 160 }}>
-                          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-                          <div className="skeleton" style={{ height: 14, width: 100, borderRadius: 4 }} />
-                       </div>
-                       <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 24px' }}>
-                         {Array.from({ length: 7 }).map((_, j) => (
-                           <div key={j} style={{ textAlign: 'center' }}>
-                             <div className="skeleton" style={{ height: 14, width: 20, margin: '0 auto 2px', borderRadius: 4 }} />
-                             <div className="skeleton" style={{ height: 10, width: 28, borderRadius: 4 }} />
-                           </div>
-                         ))}
-                       </div>
-                       <div style={{ width: 24 }}></div>
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                       <div className="skeleton" style={{ height: 20, width: 220, borderRadius: 4 }} />
+                       <div className="skeleton" style={{ height: 44, width: '100%', borderRadius: 6 }} />
                     </div>
                   ))
-                ) : dashSorted.map(u => (
-                  <div key={u.name} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-                    <div 
-                      onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
-                      style={{ padding: '4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 160, flexShrink: 0 }}>
-                        <div className="csr-avatar-wrapper" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <UserIcon className="csr-avatar-icon" size={12} strokeWidth={2} />
-                        </div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 16px', minWidth: 0 }}>
-                        <div style={{ textAlign: 'center' }} title="Total Work: All queries this person entered by hand or finished today">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total Handled</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Manually Entered: Queries this person typed into the system by hand">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Entered</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Finished Queries: Queries this person completed and marked done">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Done</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Logged: Queries that came from Slack automatically for this person">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botAssigned}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Entered</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Finished: Queries completed automatically by the bot">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Done</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Still Open: Queries currently open or waiting to be finished">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Fresh New Orders: Brand new query tickets logged">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New Orders</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }} title="Revisions / Corrections: Changes or fix-up requests on existing orders">
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Amends</div>
-                        </div>
+                ) : shiftGroupedDash.map(group => (
+                  <div key={group.id} style={{ background: 'var(--bg-panel)', border: `1px solid ${group.border}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                    {/* Shift Header Bar */}
+                    <div style={{ background: group.bg, padding: '12px 18px', borderBottom: `1px solid ${group.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: group.color, flexShrink: 0 }} />
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>{group.title}</h4>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: group.color, background: 'var(--bg-panel)', padding: '2px 8px', borderRadius: 12, border: `1px solid ${group.border}` }}>
+                          {group.users.length} {group.users.length === 1 ? 'Person' : 'CSRs'}
+                        </span>
                       </div>
 
-                      <div style={{ width: 24, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
-                        <Icon paths={IC.chevD} size={14} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Handled: <strong style={{ color: 'var(--text-main)' }}>{group.totHandled}</strong></span>
+                        <span style={{ color: 'var(--text-muted)' }}>Done: <strong style={{ color: '#10b981' }}>{group.totDone}</strong></span>
+                        <span style={{ color: 'var(--text-muted)' }}>Pending: <strong style={{ color: 'var(--status-warning)' }}>{group.totPending}</strong></span>
                       </div>
                     </div>
 
-                    {expandedCsr === u.name && <ExpandedCsrRow u={u} />}
+                    {/* CSR Rows inside this Shift */}
+                    <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {group.users.map(u => (
+                        <div key={u.name} style={{ background: 'var(--bg-sunken)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                          <div 
+                            onClick={() => setExpandedCsr(expandedCsr === u.name ? null : u.name)}
+                            style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: expandedCsr === u.name ? 'var(--bg-hover)' : 'transparent', transition: 'background 0.2s ease' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 160, flexShrink: 0 }}>
+                              <div className="csr-avatar-wrapper" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--border-strong)', color: group.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <UserIcon className="csr-avatar-icon" size={12} strokeWidth={2} />
+                              </div>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flex: 1, justifyContent: 'space-between', padding: '0 16px', minWidth: 0 }}>
+                              <div style={{ textAlign: 'center' }} title="Total Work: All queries this person entered by hand or finished today">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.total}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total Handled</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Manually Entered: Queries this person typed into the system by hand">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.enteredTotal}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Entered</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Finished Queries: Queries this person completed and marked done">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.completedTotal}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Done</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Logged: Queries that came from Slack automatically for this person">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botAssigned}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Entered</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Slack Bot Auto-Finished: Queries completed automatically by the bot">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.botCompleted}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bot Done</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Still Open: Queries currently open or waiting to be finished">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--status-warning)' }}>{u.pending}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Fresh New Orders: Brand new query tickets logged">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.newOrd}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>New Orders</div>
+                              </div>
+                              <div style={{ textAlign: 'center' }} title="Revisions / Corrections: Changes or fix-up requests on existing orders">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)' }}>{u.amend}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Amends</div>
+                              </div>
+                            </div>
+
+                            <div style={{ width: 24, display: 'flex', justifyContent: 'flex-end', color: 'var(--text-faint)' }}>
+                              <Icon paths={IC.chevD} size={14} style={{ transform: expandedCsr === u.name ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                            </div>
+                          </div>
+
+                          {expandedCsr === u.name && <ExpandedCsrRow u={u} />}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
-                {dashSorted.length === 0 && (
+
+                {dashSorted.length === 0 && !dashQuery.isLoading && (
                   <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>No data for selected period</div>
                 )}
               </div>
