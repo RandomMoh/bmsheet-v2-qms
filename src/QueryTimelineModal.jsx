@@ -15,7 +15,14 @@ import {
   Sparkles,
   Layers,
   Calendar,
-  Tag
+  Tag,
+  Download,
+  Copy,
+  Check,
+  FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
+  Share2
 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '/qms_react/api'
@@ -172,6 +179,8 @@ export default function QueryTimelineModal({ order, onClose }) {
   const [fullOrderData, setFullOrderData] = useState(order)
   const [filterTab, setFilterTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [expandedNodes, setExpandedNodes] = useState({})
 
   useEffect(() => {
     let mounted = true
@@ -230,9 +239,143 @@ export default function QueryTimelineModal({ order, onClose }) {
 
   const firstReplyDuration = timeDifference(targetOrder['query-received_datetime'], targetOrder['query-first-reply_datetime'])
   const completionDuration = timeDifference(targetOrder['query-received_datetime'], targetOrder['query_done'] || targetOrder['query_manual_done'])
+  const replyToCompleteDuration = timeDifference(targetOrder['query-first-reply_datetime'], targetOrder['query_done'] || targetOrder['query_manual_done'])
 
   const statusLower = (targetOrder.status || 'pending').toLowerCase()
   const statusColor = statusLower === 'completed' ? '#10b981' : statusLower === 'issue' ? '#ef4444' : '#f59e0b'
+
+  const toggleNodeExpand = (id) => {
+    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  // Copy Timeline Summary to Clipboard
+  const handleCopySummary = () => {
+    const lines = [
+      `=== QMS QUERY AUDIT TRAIL ===`,
+      `Order ID: #${targetOrder.id}`,
+      `Property: ${targetOrder['propery-order'] || 'N/A'}`,
+      `Status: ${targetOrder.status || 'Pending'}`,
+      `Project: ${targetOrder.project_name || 'N/A'} | Department: ${targetOrder.department || 'N/A'}`,
+      `Entered By: ${targetOrder.qname || 'CSR'} on ${formatDateTime(targetOrder['query-received_datetime'])}`,
+      `1st Reply SLA: ${firstReplyDuration || 'Pending'} (${formatDateTime(targetOrder['query-first-reply_datetime'])})`,
+      `Assigned / Completed By: ${targetOrder.completed_by || 'Unassigned'}`,
+      `----------------------------------------`,
+      `TIMELINE EVENTS (${events.length}):`,
+      ...events.map(ev => {
+        const time = formatDateTime(ev.timestamp_pkt)
+        const user = ev.changed_by || 'System'
+        const act = ev.action
+        const diff = ev.field_changed ? ` [${fieldReadableName(ev.field_changed)}: ${ev.old_value || 'None'} -> ${ev.new_value || 'None'}]` : ''
+        return `- [${time}] ${act} by ${user}${diff}`
+      })
+    ]
+    navigator.clipboard.writeText(lines.join('\n'))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Export CSV
+  const handleExportCSV = () => {
+    const headers = ['Order ID', 'Property Order', 'Timestamp PKT', 'Action', 'Performed By', 'Field Changed', 'Old Value', 'New Value']
+    const rows = events.map(ev => [
+      targetOrder.id,
+      `"${(targetOrder['propery-order'] || '').replace(/"/g, '""')}"`,
+      `"${ev.timestamp_pkt || ''}"`,
+      `"${(ev.action || '').replace(/"/g, '""')}"`,
+      `"${(ev.changed_by || '').replace(/"/g, '""')}"`,
+      `"${(ev.field_changed || '').replace(/"/g, '""')}"`,
+      `"${(ev.old_value || '').replace(/"/g, '""')}"`,
+      `"${(ev.new_value || '').replace(/"/g, '""')}"`
+    ])
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', `query_audit_${targetOrder.id}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Export PDF Report using jsPDF + autoTable
+  const handleExportPDF = async () => {
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ])
+      const doc = new jsPDF()
+
+      // Header Banner
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, 210, 28, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`QMS Audit Trail Report — Order #${targetOrder.id}`, 14, 18)
+
+      // Summary Details
+      doc.setTextColor(30, 41, 59)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+
+      let y = 36
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Property / Order:`, 14, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${targetOrder['propery-order'] || 'N/A'}`, 55, y)
+
+      y += 6
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Status:`, 14, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${targetOrder.status || 'Pending'}`, 55, y)
+
+      y += 6
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Entered By / Datetime:`, 14, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${targetOrder.qname || 'CSR'} on ${formatDateTime(targetOrder['query-received_datetime'])}`, 55, y)
+
+      y += 6
+      doc.setFont('helvetica', 'bold')
+      doc.text(`1st Reply SLA:`, 14, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${firstReplyDuration || 'Pending'} (${formatDateTime(targetOrder['query-first-reply_datetime'])})`, 55, y)
+
+      y += 6
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Completed / Assigned To:`, 14, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${targetOrder.completed_by || 'Unassigned'}`, 55, y)
+
+      y += 10
+
+      // Table of events
+      const tableData = events.map(ev => [
+        formatDateTime(ev.timestamp_pkt),
+        ev.action || '—',
+        ev.changed_by || 'CSR/System',
+        ev.field_changed ? fieldReadableName(ev.field_changed) : '—',
+        ev.old_value || '—',
+        ev.new_value || '—'
+      ])
+
+      autoTable(doc, {
+        startY: y,
+        head: [['Timestamp (PKT)', 'Action', 'User', 'Field', 'Old Value', 'New Value']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillStyle: 'F', fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 3 }
+      })
+
+      doc.save(`QMS_Audit_Order_${targetOrder.id}.pdf`)
+    } catch (err) {
+      console.error('PDF export failed:', err)
+    }
+  }
 
   return (
     <div className="vtm-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="vtm-title">
@@ -280,7 +423,24 @@ export default function QueryTimelineModal({ order, onClose }) {
           </button>
         </div>
 
-        {/* Executive Summary Cards (Solid Contrast Blocks) */}
+        {/* Stage-by-Stage SLA Duration Bar */}
+        {(firstReplyDuration || replyToCompleteDuration) && (
+          <div className="vtm-sla-stages-bar">
+            <span className="vtm-sla-title">Stage Durations:</span>
+            <div className="vtm-sla-chip">
+              <span className="vtm-sla-label">Stage 1 (Entry → 1st Reply):</span>
+              <span className="vtm-sla-val">{firstReplyDuration || 'Pending'}</span>
+            </div>
+            {replyToCompleteDuration && (
+              <div className="vtm-sla-chip">
+                <span className="vtm-sla-label">Stage 2 (1st Reply → Resolution):</span>
+                <span className="vtm-sla-val">{replyToCompleteDuration}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Executive Summary Cards */}
         <div className="vtm-summary-bar">
           <div className="vtm-summary-card card-entered">
             <div className="vtm-summary-header">
@@ -374,6 +534,7 @@ export default function QueryTimelineModal({ order, onClose }) {
                 const IconComp = config.icon
                 const isDiff = ev.old_value !== null || (ev.new_value !== null && ev.new_value !== '')
                 const fieldName = fieldReadableName(ev.field_changed)
+                const isExpanded = expandedNodes[ev.id || index]
 
                 return (
                   <div key={ev.id || index} className="vtm-event-node" style={{ animationDelay: `${index * 0.04}s` }}>
@@ -382,8 +543,8 @@ export default function QueryTimelineModal({ order, onClose }) {
                       <IconComp size={15} />
                     </div>
 
-                    {/* Timeline Event Card (Solid Dark High Contrast Card) */}
-                    <div className="vtm-card" style={{ borderColor: config.cardBorder }}>
+                    {/* Timeline Event Card */}
+                    <div className="vtm-card" style={{ borderColor: config.cardBorder }} onClick={() => toggleNodeExpand(ev.id || index)}>
                       <div className="vtm-card-header">
                         <div className="vtm-action-wrap">
                           <span className="vtm-action-pill" style={{ color: config.badgeText, backgroundColor: config.badgeBg, borderColor: config.badgeBorder }}>
@@ -397,10 +558,15 @@ export default function QueryTimelineModal({ order, onClose }) {
                           )}
                         </div>
 
-                        <span className="vtm-time-stamp" title={ev.timestamp_pkt}>
-                          <Calendar size={12} className="inline mr-1.5 opacity-60" />
-                          {formatDateTime(ev.timestamp_pkt)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="vtm-time-stamp" title={ev.timestamp_pkt}>
+                            <Calendar size={12} className="inline mr-1.5 opacity-60" />
+                            {formatDateTime(ev.timestamp_pkt)}
+                          </span>
+                          <button className="vtm-expand-btn">
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Changed By User line */}
@@ -431,6 +597,24 @@ export default function QueryTimelineModal({ order, onClose }) {
                           </div>
                         </div>
                       )}
+
+                      {/* Expanded Technical Inspection Details */}
+                      {isExpanded && (
+                        <div className="vtm-expanded-details">
+                          <div className="vtm-detail-row">
+                            <span className="vtm-detail-key">Action Type:</span>
+                            <span className="vtm-detail-val">{ev.action}</span>
+                          </div>
+                          <div className="vtm-detail-row">
+                            <span className="vtm-detail-key">Raw Timestamp:</span>
+                            <span className="vtm-detail-val">{ev.timestamp_pkt}</span>
+                          </div>
+                          <div className="vtm-detail-row">
+                            <span className="vtm-detail-key">Event ID:</span>
+                            <span className="vtm-detail-val">#{ev.id || 'N/A'}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -439,11 +623,23 @@ export default function QueryTimelineModal({ order, onClose }) {
           )}
         </div>
 
-        {/* Footer info bar */}
+        {/* Footer Toolbar: PDF, CSV, Copy Summary */}
         <div className="vtm-footer">
-          <div className="vtm-footer-info">
-            Showing {filteredEvents.length} of {events.length} timeline actions · Timestamps in PKT (UTC+5)
+          <div className="vtm-footer-actions">
+            <button className="vtm-btn-secondary" onClick={handleCopySummary} title="Copy Markdown summary to clipboard">
+              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+            </button>
+            <button className="vtm-btn-secondary" onClick={handleExportCSV} title="Export audit trail as CSV spreadsheet">
+              <FileSpreadsheet size={14} />
+              <span>CSV</span>
+            </button>
+            <button className="vtm-btn-secondary" onClick={handleExportPDF} title="Download official PDF report">
+              <Download size={14} />
+              <span>PDF Report</span>
+            </button>
           </div>
+
           <button className="vtm-btn-primary" onClick={onClose}>
             Done
           </button>

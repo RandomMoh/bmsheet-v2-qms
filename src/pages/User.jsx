@@ -1919,11 +1919,17 @@ export default function CSRPortal() {
     if (!user) return
     const ping = async () => {
       try {
-        await fetch(`${API}/heartbeat.php`, {
+        const res = await fetch(`${API}/heartbeat.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name, userRole: displayRole })
         })
+        const data = await res.json()
+        if (data.role && data.role !== user.userRole) {
+          const updatedUser = { ...user, userRole: data.role }
+          setUser(updatedUser)
+          sessionStorage.setItem('qmsUser', JSON.stringify(updatedUser))
+        }
         queryClient.invalidateQueries(['csr_shifts'])
       } catch {}
     }

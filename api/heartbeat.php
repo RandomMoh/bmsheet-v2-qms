@@ -32,5 +32,5 @@ if ($userId > 0 && !empty($username)) {
 $cutoff = date('Y-m-d H:i:s', time() - 1800);
 $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < '$cutoff'");
 
-echo json_encode(['status' => 'success', 'timestamp' => $now]);
+echo json_encode(['status' => 'success', 'timestamp' => $now, 'role' => $role]);
 ?>
