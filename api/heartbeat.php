@@ -1,5 +1,8 @@
 <?php
 date_default_timezone_set('Asia/Karachi');
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 include_once 'config.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -33,8 +36,10 @@ $cutoff = date('Y-m-d H:i:s', time() - 1800);
 $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < '$cutoff'");
 
 $deployVersion = '1';
-if (file_exists(__DIR__ . '/version.json')) {
-    $vData = json_decode(file_get_contents(__DIR__ . '/version.json'), true);
+$vFile = __DIR__ . '/version.json';
+if (file_exists($vFile)) {
+    clearstatcache(true, $vFile);
+    $vData = json_decode(file_get_contents($vFile), true);
     if (!empty($vData['version'])) {
         $deployVersion = (string)$vData['version'];
     }

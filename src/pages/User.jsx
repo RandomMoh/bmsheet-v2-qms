@@ -2008,10 +2008,8 @@ export default function CSRPortal() {
         const data = await res.json()
         if (data.deploy_version) {
           const currentDeployVer = sessionStorage.getItem('qmsDeployVersion')
-          if (!currentDeployVer) {
-            sessionStorage.setItem('qmsDeployVersion', data.deploy_version)
-          } else if (data.deploy_version !== currentDeployVer) {
-            logout('System updated to a new version. Please sign in again.')
+          if (!currentDeployVer || currentDeployVer !== data.deploy_version) {
+            logout('System was updated with a new version. Please sign in again to load the latest features.')
             return
           }
         }
