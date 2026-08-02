@@ -32,5 +32,13 @@ if ($userId > 0 && !empty($username)) {
 $cutoff = date('Y-m-d H:i:s', time() - 1800);
 $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < '$cutoff'");
 
-echo json_encode(['status' => 'success', 'timestamp' => $now, 'role' => $role]);
+$deployVersion = '1';
+if (file_exists(__DIR__ . '/version.json')) {
+    $vData = json_decode(file_get_contents(__DIR__ . '/version.json'), true);
+    if (!empty($vData['version'])) {
+        $deployVersion = (string)$vData['version'];
+    }
+}
+
+echo json_encode(['status' => 'success', 'timestamp' => $now, 'role' => $role, 'deploy_version' => $deployVersion]);
 ?>

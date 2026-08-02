@@ -1940,6 +1940,15 @@ export default function CSRPortal() {
           body: JSON.stringify({ user_id: user.id, username: user.dusername || user.username || user.name, userRole: displayRole })
         })
         const data = await res.json()
+        if (data.deploy_version) {
+          const currentDeployVer = sessionStorage.getItem('qmsDeployVersion')
+          if (!currentDeployVer) {
+            sessionStorage.setItem('qmsDeployVersion', data.deploy_version)
+          } else if (data.deploy_version !== currentDeployVer) {
+            logout('System updated to a new version. Please sign in again.')
+            return
+          }
+        }
         if (data.role && data.role !== user.userRole) {
           const updatedUser = { ...user, userRole: data.role }
           setUser(updatedUser)

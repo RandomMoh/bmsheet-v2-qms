@@ -34,6 +34,7 @@ export default function Login() {
         if (data.status === 'success') {
           sessionStorage.setItem('qmsUser', JSON.stringify(data.user))
           sessionStorage.setItem('qmsRole', data.role)
+          if (data.deploy_version) sessionStorage.setItem('qmsDeployVersion', data.deploy_version)
           localStorage.setItem('qmsLastActive', Date.now().toString())
           window.dispatchEvent(new Event('auth_change'))
           navigate(`/user`)

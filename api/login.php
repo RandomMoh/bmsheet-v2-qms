@@ -79,10 +79,19 @@ if (mysqli_num_rows($q) > 0) {
             $stmt->close();
         }
 
+        $deployVersion = '1';
+        if (file_exists(__DIR__ . '/version.json')) {
+            $vData = json_decode(file_get_contents(__DIR__ . '/version.json'), true);
+            if (!empty($vData['version'])) {
+                $deployVersion = (string)$vData['version'];
+            }
+        }
+
         logActivity('Login', $userRole . ' logged in: ' . $row['dname']);
         echo json_encode([
             "status" => "success",
             "role" => "user",
+            "deploy_version" => $deployVersion,
             "user" => [
                 "id" => $row['d_id'],
                 "username" => $row['dusername'],
