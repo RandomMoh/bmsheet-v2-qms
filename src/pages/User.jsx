@@ -1508,6 +1508,20 @@ export default function CSRPortal() {
   useEffect(() => {
     const s = sessionStorage.getItem('qmsUser'), r = sessionStorage.getItem('qmsRole')
     if (!s || r !== 'user') { navigate('/'); return }
+
+    // Check if user was inactive for > 1 hour (3600000 ms)
+    const lastActiveStr = localStorage.getItem('qmsLastActive')
+    const now = Date.now()
+    if (lastActiveStr) {
+      const lastActive = parseInt(lastActiveStr, 10)
+      if (!isNaN(lastActive) && (now - lastActive) > 3600000) {
+        logout('Session expired due to 1 hour of inactivity.')
+        return
+      }
+    } else {
+      localStorage.setItem('qmsLastActive', now.toString())
+    }
+
     const u = JSON.parse(s)
     setUser(u)
     if (u.project_filter) {
@@ -1737,11 +1751,12 @@ export default function CSRPortal() {
     doc.save(`QMS_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
-  const logout = async () => {
+  const logout = async (reason) => {
     try { await fetch(`${API}/logout.php`); } catch (e) {}
     sessionStorage.removeItem('qmsUser');
     sessionStorage.removeItem('qmsRole');
-    navigate('/');
+    localStorage.removeItem('qmsLastActive');
+    navigate('/', { state: { message: typeof reason === 'string' ? reason : 'Logged out successfully.' } });
   }
   const openNew = () => {
     const d = defaultPKTDL()
@@ -1955,6 +1970,38 @@ export default function CSRPortal() {
       window.removeEventListener('beforeunload', handleLeave)
     }
   }, [user, displayRole, queryClient, API])
+
+  // Live 1-Hour Inactivity Auto-Logout Tracker
+  useEffect(() => {
+    if (!user) return
+    let lastUpdate = 0
+    const updateActivity = () => {
+      const now = Date.now()
+      if (now - lastUpdate > 3000) { // Throttle updates to once every 3 seconds
+        lastUpdate = now
+        localStorage.setItem('qmsLastActive', now.toString())
+      }
+    }
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    events.forEach(ev => window.addEventListener(ev, updateActivity, { passive: true }))
+
+    // Check every 10 seconds if idle duration > 1 hour (3600000 ms)
+    const checkIdleTimer = setInterval(() => {
+      const lastActiveStr = localStorage.getItem('qmsLastActive')
+      if (lastActiveStr) {
+        const lastActive = parseInt(lastActiveStr, 10)
+        if (!isNaN(lastActive) && (Date.now() - lastActive) > 3600000) {
+          logout('Session expired due to 1 hour of inactivity.')
+        }
+      }
+    }, 10000)
+
+    return () => {
+      events.forEach(ev => window.removeEventListener(ev, updateActivity))
+      clearInterval(checkIdleTimer)
+    }
+  }, [user])
 
   if (!user) return null
   const initials = displayName[0]?.toUpperCase() || 'U'

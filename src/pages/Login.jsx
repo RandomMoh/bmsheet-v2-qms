@@ -1,12 +1,10 @@
 import { useState, lazy, Suspense } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import ThemeToggle from '../ThemeToggle'
 
 const WebGLBackground = lazy(() => import('../components/WebGLBackground'))
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
-
-
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -16,6 +14,7 @@ export default function Login() {
   const [focusField, setFocusField] = useState(null)
   const [authModalVisible, setAuthModalVisible] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const handleLogin = async e => {
     e.preventDefault()
@@ -35,6 +34,7 @@ export default function Login() {
         if (data.status === 'success') {
           sessionStorage.setItem('qmsUser', JSON.stringify(data.user))
           sessionStorage.setItem('qmsRole', data.role)
+          localStorage.setItem('qmsLastActive', Date.now().toString())
           window.dispatchEvent(new Event('auth_change'))
           navigate(`/user`)
         } else {
@@ -133,6 +133,13 @@ export default function Login() {
           </div>
 
 
+
+          {location.state?.message && !error && (
+            <div className="anim-fade-in" style={{ marginBottom: 20, padding: '10px 14px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)', color: '#fbbf24', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', flexShrink: 0 }} />
+              {location.state.message}
+            </div>
+          )}
 
           {error && (
             <div className="anim-fade-in" style={{ marginBottom: 20, padding: '10px 14px', background: 'var(--status-danger-bg)', border: '1px solid var(--status-danger)', borderRadius: 'var(--radius-md)', color: 'var(--status-danger)', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
