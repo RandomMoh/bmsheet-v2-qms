@@ -1821,8 +1821,13 @@ export default function CSRPortal() {
     try { await fetch(`${API}/logout.php`); } catch (e) {}
     sessionStorage.removeItem('qmsUser');
     sessionStorage.removeItem('qmsRole');
+    sessionStorage.removeItem('qmsDeployVersion');
     localStorage.removeItem('qmsLastActive');
-    navigate('/', { state: { message: typeof reason === 'string' ? reason : 'Logged out successfully.' } });
+    if (typeof reason === 'string' && reason !== 'Logged out successfully.') {
+      navigate('/', { state: { message: reason } });
+    } else {
+      navigate('/', { replace: true });
+    }
   }
   const openNew = () => {
     const d = defaultPKTDL()

@@ -135,7 +135,7 @@ export default function Login() {
 
 
 
-          {location.state?.message && !error && (
+          {location.state?.message && location.state.message !== 'Logged out successfully.' && !error && (
             <div className="anim-fade-in" style={{ marginBottom: 20, padding: '10px 14px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)', color: '#fbbf24', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', flexShrink: 0 }} />
               {location.state.message}
