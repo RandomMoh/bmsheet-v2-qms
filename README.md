@@ -15,99 +15,82 @@ Query Management System (QMS) is an operational intelligence dashboard, CSR shif
 
 ```text
 .
-├── .env.development         : Development environment configuration
-├── .env.production          : Production environment configuration
-├── .gitignore               : Ignored files and secret exclusions
 ├── README.md                : Project documentation
-├── eslint.config.js         : ESLint code quality and formatting rules
-├── index.html               : Main HTML entry point for the React application
-├── package-lock.json        : Locked dependency tree versions
-├── package.json             : Node.js project manifest and scripts
-├── postcss.config.js        : PostCSS configuration for Tailwind CSS
+├── index.html               : Main HTML application container
+├── package.json             : Project manifest and scripts
 ├── shutdown_qms.php         : Script to toggle system-wide maintenance shutdown
-├── tailwind.config.js       : Tailwind CSS theme and utility configuration
-├── vite.config.js           : Vite bundler, proxy, and build configuration
+├── tailwind.config.js       : Tailwind CSS theme configuration
+├── vite.config.js           : Vite bundler and build options
 │
-├── api/                     : Backend PHP REST API Endpoints
-│   ├── activity-logger.php  : Helper to write system activity log entries
+├── api/                     : Backend PHP REST API Layer
+│   ├── activity-logger.php  : Helper to write activity log entries
 │   ├── add-admin.php        : Endpoint to grant super-admin privileges
-│   ├── add-order.php        : Endpoint to insert new query orders into the database
-│   ├── add-user.php         : Endpoint for admins to create new CSR user accounts
-│   ├── backfill_reply.sql   : SQL migration script for backfilling initial reply timestamps
-│   ├── config.php           : Core backend configuration, CORS, session setup, rate limiter, and security headers
-│   ├── create-csr.php       : Endpoint to create new CSR accounts with generated BCRYPT passwords
-│   ├── create_activity_log.sql : Database schema definition for the activity_logs table
+│   ├── add-order.php        : Endpoint to create new query orders
+│   ├── add-user.php         : Endpoint for admins to create CSR accounts
+│   ├── config.php           : Core backend config, database connection, session setup, rate limiter, and security headers
+│   ├── create-csr.php       : Endpoint to generate CSR accounts with BCRYPT passwords
 │   ├── delete-user.php      : Endpoint for admins to remove CSR accounts
 │   ├── dev-change-password.php : Endpoint to update the Dev terminal access passphrase
 │   ├── dev-channels.php     : Endpoint to configure Slack channels for workspace monitoring
-│   ├── dev-login-maker.php  : Endpoint to verify senior maker access credentials
+│   ├── dev-login-maker.php  : Endpoint to verify senior maker authorization
 │   ├── dev-login.php        : Endpoint to authenticate Dev terminal access
-│   ├── dev-logs.php         : Endpoint to fetch and stream server error and access logs
-│   ├── dev-telemetry.php    : Endpoint for real-time system resource and status telemetry
-│   ├── dev-webhook-status.php : Endpoint to check status of Slack webhook listeners
-│   ├── dev-workspaces.php   : Endpoint to list and manage active workspace configurations
+│   ├── dev-logs.php         : Endpoint to stream server error and access logs
+│   ├── dev-telemetry.php    : Endpoint for real-time system resource telemetry
+│   ├── dev-webhook-status.php : Endpoint to check Slack webhook status
+│   ├── dev-workspaces.php   : Endpoint to manage active workspace configurations
 │   ├── extend-time.php      : Endpoint to extend query SLA time limits
-│   ├── fix.php              : Utility script to clean up invalid or corrupted query entries
+│   ├── fix.php              : Utility script to clean up query entries
 │   ├── get-activity-logs.php: Endpoint to fetch recent activity audit logs
-│   ├── get-completed-by-names.php : Endpoint to fetch list of CSRs who completed queries
-│   ├── get-csr-names.php    : Endpoint to fetch list of active CSR names
-│   ├── get-csr-shifts.php   : Endpoint to fetch active CSR shift status and session metrics
-│   ├── get-current-orders.php : Endpoint to fetch pending queries in the queue
+│   ├── get-completed-by-names.php : Endpoint to fetch CSR completion metrics
+│   ├── get-csr-names.php    : Endpoint to fetch active CSR names
+│   ├── get-csr-shifts.php   : Endpoint to fetch active CSR shift metrics
+│   ├── get-current-orders.php : Endpoint to fetch pending queue queries
 │   ├── get-done-orders.php  : Endpoint to fetch completed query records
-│   ├── get-issue-orders.php : Endpoint to fetch queries flagged with issues
-│   ├── get-monitor.php      : Endpoint for background operational monitoring checks
-│   ├── get-orders.php       : Endpoint to fetch all orders with filtering options
-│   ├── get-query-history.php: Endpoint to fetch audit history timeline for a query
-│   ├── get-slack-thread.php : Endpoint to fetch Slack message threads linked to a query
-│   ├── get-stats.php        : Endpoint to fetch real-time dashboard analytics and statistics
-│   ├── get-user-orders.php  : Endpoint to fetch queries assigned to a specific CSR
-│   ├── get-users.php        : Endpoint to fetch all registered users and their details
-│   ├── heartbeat.php        : Endpoint to update active CSR session ping and last-active time
-│   ├── leave.php            : Endpoint to record CSR leave and shift end status
+│   ├── get-issue-orders.php : Endpoint to fetch queries with reported issues
+│   ├── get-monitor.php      : Endpoint for background operational checks
+│   ├── get-orders.php       : Endpoint to fetch all orders with filtering
+│   ├── get-query-history.php: Endpoint to fetch audit history timeline for an order
+│   ├── get-slack-thread.php : Endpoint to fetch Slack message threads for a query
+│   ├── get-stats.php        : Endpoint to fetch real-time dashboard analytics
+│   ├── get-user-orders.php  : Endpoint to fetch queries assigned to a CSR
+│   ├── get-users.php        : Endpoint to fetch registered user accounts
+│   ├── heartbeat.php        : Endpoint to update active session ping and last-active time
+│   ├── leave.php            : Endpoint to record CSR shift end status
 │   ├── login.php            : Endpoint for CSR and User authentication
-│   ├── login_maker_config.json : Hashed credentials file for senior maker authorization
 │   ├── logout.php           : Endpoint to clear active session and log out
-│   ├── maintenance.html     : HTML page rendered when system maintenance mode is enabled
-│   ├── mark-order.php       : Endpoint to update order status (pending, issue, done)
+│   ├── maintenance.html     : HTML template displayed during scheduled maintenance
+│   ├── mark-order.php       : Endpoint to update query status (pending, issue, done)
 │   ├── setup_slack_channels.php : Script to initialize Slack channel subscriptions
-│   ├── slack-webhook.php    : Receiver endpoint for incoming Slack webhook payloads
-│   ├── update-field.php     : Endpoint to update specific order fields with audit logging
-│   ├── update-project-filter.php : Endpoint to update project view filters for a user
-│   ├── update-user.php      : Endpoint to update user profile information
-│   ├── version.json         : Deployment version identifier for client cache invalidation
-│   ├── webhook-config.php   : Configuration settings for Slack webhooks
-│   └── webhook_log.txt      : Text log file capturing raw incoming webhook payloads
+│   ├── slack-webhook.php    : Receiver endpoint for incoming Slack webhooks
+│   ├── update-field.php     : Endpoint to update order fields with audit logging
+│   ├── update-project-filter.php : Endpoint to update user project view filters
+│   └── update-user.php      : Endpoint to update user profile information
 │
-├── public/                  : Static Assets and Standalone Web Pages
-│   ├── .htaccess            : Apache rewrite rules and security configurations
-│   ├── .htaccess.backup     : Backup copy of Apache htaccess rules
-│   ├── benchmark.svg        : Official Benchmark Studio SVG logo
-│   ├── create_csr.html      : Standalone Web UI for creating new CSR accounts
-│   ├── favicon.ico          : Application browser favicon icon
+├── public/                  : Application Web Assets
+│   ├── .htaccess            : Apache rewrite rules and security settings
+│   ├── benchmark.svg        : Benchmark Studio SVG brand logo
+│   ├── create_csr.html      : Standalone interface for creating CSR accounts
 │   ├── logo.svg             : Primary QMS brand SVG logo asset
-│   ├── shutdown.html        : Standalone page displayed during system shutdown
-│   └── vite.svg             : Vite framework logo asset
+│   └── shutdown.html        : Page displayed during system shutdown
 │
-└── src/                     : React Frontend Source Code
-    ├── App.css              : Global styles and layout utility classes
-    ├── App.jsx              : Main application router and state provider root
-    ├── CursorTrail.jsx      : Interactive cursor trail particle animation component
-    ├── NetworkStatus.jsx    : Offline and online network connectivity indicator banner
-    ├── QueryTimelineModal.jsx : Modal component displaying audit timeline for a query
-    ├── SlackThreadViewer.jsx: Component for inspecting inline Slack conversation threads
-    ├── ThemeToggle.jsx      : Dark mode and light mode theme switcher control
-    ├── index.css            : Base Tailwind CSS imports and custom design tokens
-    ├── main.jsx             : React DOM root render entry point
-    ├── assets/
-    │   └── react.svg        : React logo asset
+└── src/                     : React Frontend Application Code
+    ├── App.css              : Application layout styling rules
+    ├── App.jsx              : Main application router and state root
+    ├── CursorTrail.jsx      : Interactive cursor particle animation component
+    ├── NetworkStatus.jsx    : Network connection status indicator banner
+    ├── QueryTimelineModal.jsx : Modal component displaying order history timeline
+    ├── SlackThreadViewer.jsx: Component for viewing inline Slack conversation threads
+    ├── ThemeToggle.jsx      : Dark and light theme switcher control
+    ├── index.css            : Tailwind CSS base styles and design tokens
+    ├── main.jsx             : React DOM render entry point
     ├── components/
-    │   └── WebGLBackground.jsx : Animated 3D interactive background rendered via Three.js
+    │   └── WebGLBackground.jsx : Interactive 3D WebGL background component
     └── pages/
-        ├── Dev.css          : Styling rules for the Dev terminal page
-        ├── Dev.jsx          : Passphrase-protected Dev terminal interface component
+        ├── Dev.css          : Styling rules for the Dev terminal
+        ├── Dev.jsx          : Passphrase-protected Dev terminal page
         ├── Login.css        : Styling rules for the login page
-        ├── Login.jsx        : User and CSR login page component
-        └── User.jsx         : Primary CSR operational dashboard page component
+        ├── Login.jsx        : User and CSR login page
+        └── User.jsx         : Primary CSR operational dashboard page
 ```
 
 ---
