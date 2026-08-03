@@ -1,0 +1,53 @@
+name: Deploy QMS Pro to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Production Bundle
+        run: npm run build
+
+      - name: 🏷️ Update Deployment Version
+        run: |
+          VERSION=$(date +%s)
+          echo "{\"version\": \"$VERSION\"}" > api/version.json
+
+      - name: 🔑 Configure SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CPANEL_SSH_KEY }}
+
+      - name: 🚀 Sync API Backend to cPanel
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+            --exclude 'sessions' \
+            --exclude 'sessions/' \
+            --exclude '*.log' \
+            --exclude '*.txt' \
+            api/ ${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:public_html/qms_react/api/
+
+      - name: 🌐 Sync Frontend Assets to cPanel
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+            --exclude 'api' \
+            --exclude 'api/' \
+            --delete \
+            dist/ ${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:public_html/qms_react/
