@@ -145,9 +145,54 @@ const DEPTS_FOR_PROJECT = (project) => {
   return [...new Set(items.map(i => i.d))]
 }
 const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editing', 'Virtual Staging']
-const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
 const API = import.meta.env.VITE_API_BASE_URL
+
+const TableSkeleton = memo(function TableSkeleton({ cols = 8, rows = 6 }) {
+  const widths = [
+    ['110px', '45px', '75px', '60px', '95px', '65px', '85px', '70px', '60px', '90px'],
+    ['125px', '50px', '65px', '70px', '85px', '55px', '90px', '65px', '55px', '80px'],
+    ['105px', '40px', '80px', '55px', '110px', '70px', '80px', '75px', '65px', '95px'],
+    ['115px', '48px', '70px', '65px', '90px', '60px', '95px', '60px', '50px', '85px'],
+    ['120px', '52px', '60px', '75px', '100px', '65px', '75px', '70px', '60px', '90px'],
+    ['110px', '42px', '85px', '50px', '105px', '55px', '85px', '80px', '55px', '80px'],
+  ]
+  return (
+    <tbody className="stagger">
+      {Array.from({ length: rows }).map((_, r) => {
+        const rowWidths = widths[r % widths.length]
+        return (
+          <tr key={r} style={{ height: 48, borderBottom: '1px solid var(--border-subtle)' }}>
+            {Array.from({ length: cols }).map((_, c) => (
+              <td key={c} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                <div className="skeleton" style={{ height: 14, width: rowWidths[c % rowWidths.length] || '75%', borderRadius: 4, opacity: 0.85 }} />
+              </td>
+            ))}
+          </tr>
+        )
+      })}
+    </tbody>
+  )
+})
+
+const ShiftCardSkeleton = memo(function ShiftCardSkeleton({ count = 3 }) {
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="skeleton" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="skeleton" style={{ height: 14, width: 110, borderRadius: 4 }} />
+              <div className="skeleton" style={{ height: 10, width: 70, borderRadius: 4 }} />
+            </div>
+          </div>
+          <div className="skeleton" style={{ height: 22, width: 65, borderRadius: 12 }} />
+        </div>
+      ))}
+    </div>
+  )
+})
 const NAVS = [
   { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
   { id: 'current', label: 'Current Queue', icon: IC.bolt },
@@ -1356,7 +1401,7 @@ function CsrShiftsView({ API }) {
 
               <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {shiftsQuery.isLoading ? (
-                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+                  <ShiftCardSkeleton count={3} />
                 ) : (shift.csrs || []).map(c => {
                   let badgeBg = 'var(--bg-hover)'
                   let badgeColor = 'var(--text-muted)'
@@ -2366,20 +2411,17 @@ export default function CSRPortal() {
           {/* ── DATA TABLE ── */}
           {['current', 'issue', 'done'].includes(section) && (
             <div className="panel fade-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              {loading ? (
-                <div style={{ height: 256, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--text-faint)' }}>
-                  <div className="spinner" style={{ width: 20, height: 20, border: '2px solid var(--border-strong)', borderTopColor: 'var(--text-main)', borderRadius: '50%' }} />
-                  <span style={{ fontSize: 13 }}>Loading…</span>
-                </div>
-              ) : (
-                <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
-                  <table className="tbl">
-                    <thead><tr>
-                      {section === 'current' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Deadline','1st Reply','Entered By'].map(h => <th key={h}>{h}</th>)}
-                      {section === 'issue' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Entered By','Issue / Notes'].map(h => <th key={h}>{h}</th>)}
-                      {section === 'done' && ['Received','Medium','Country','Project Code','Type','Order ID','1st Reply','Last Reply','Entered By','Completed By','Duration','History'].map(h => <th key={h}>{h}</th>)}
-                      <th style={{ width: 60 }}></th>
-                    </tr></thead>
+              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
+                <table className="tbl">
+                  <thead><tr>
+                    {section === 'current' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Deadline','1st Reply','Entered By'].map(h => <th key={h}>{h}</th>)}
+                    {section === 'issue' && ['Received','Age','Medium','Country','Project Code','Type','Order ID','Entered By','Issue / Notes'].map(h => <th key={h}>{h}</th>)}
+                    {section === 'done' && ['Received','Medium','Country','Project Code','Type','Order ID','1st Reply','Last Reply','Entered By','Completed By','Duration','History'].map(h => <th key={h}>{h}</th>)}
+                    <th style={{ width: 60 }}></th>
+                  </tr></thead>
+                  {loading ? (
+                    <TableSkeleton cols={section === 'current' ? 11 : section === 'issue' ? 10 : 13} rows={6} />
+                  ) : (
                     <tbody className="stagger">
                       {visible.length === 0 ? (
                         <tr><td colSpan={20} style={{ textAlign: 'center', padding: 60, color: 'var(--text-faint)' }}>No records found.</td></tr>
@@ -2465,9 +2507,9 @@ export default function CSRPortal() {
                         })()
                       })}
                     </tbody>
+                  )}
                   </table>
                 </div>
-              )}
               
               {/* ── PAGINATION ── */}
               {!loading && totalPages > 1 && (
