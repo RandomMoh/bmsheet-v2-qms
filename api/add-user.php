@@ -26,7 +26,10 @@ if (!isset($data->name) || !isset($data->username) || !isset($data->password)) {
 
 $name = mysqli_real_escape_string($conn, trim($data->name));
 $username = mysqli_real_escape_string($conn, trim($data->username));
-$password = trim($data->password);
+$plainPassword = trim($data->password);
+$hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
+$hashedEsc = mysqli_real_escape_string($conn, $hashedPassword);
+$plainEsc = mysqli_real_escape_string($conn, $plainPassword);
 
 $check = mysqli_query($conn, "SELECT d_id FROM `user` WHERE `dusername` = '$username'");
 if (mysqli_num_rows($check) > 0) {
@@ -34,7 +37,7 @@ if (mysqli_num_rows($check) > 0) {
     exit();
 }
 
-$sql = "INSERT INTO `user` (dname, dusername, dpassword, dstatus) VALUES ('$name', '$username', '$password', 'yes')";
+$sql = "INSERT INTO `user` (dname, dusername, dpassword, plain_password, dstatus, role) VALUES ('$name', '$username', '$hashedEsc', '$plainEsc', '1', 'CSR')";
 
 if (mysqli_query($conn, $sql)) {
     logActivity('Add CSR', "Added new CSR user: $name ($username)");
