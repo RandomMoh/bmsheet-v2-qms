@@ -37,14 +37,35 @@ jobs:
           CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
         run: |
           mkdir -p ~/.ssh
-          if [ -n "$CPANEL_KEY_B64" ]; then
-            echo "$CPANEL_KEY_B64" | base64 -d > ~/.ssh/cpanel_key
-          else
-            printf "%s\n" "$CPANEL_KEY" | tr -d '\r' > ~/.ssh/cpanel_key
-          fi
-          echo "" >> ~/.ssh/cpanel_key
+          python3 -c "
+          import os, sys, re
+          raw = os.environ.get('CPANEL_KEY_B64', '')
+          if raw:
+              import base64
+              key = base64.b64decode(raw).decode('utf-8')
+          else:
+              key = os.environ.get('CPANEL_KEY', '')
+
+          m = re.search(r'(-----BEGIN [^-]+-----)\s*(.*?)\s*(-----END [^-]+-----)', key, re.DOTALL)
+          if m:
+              header, body, footer = m.groups()
+              body_clean = ''.join(body.split())
+              wrapped = '\n'.join(body_clean[i:i+64] for i in range(0, len(body_clean), 64))
+              key = f'{header}\n{wrapped}\n{footer}\n'
+
+          key_path = os.path.expanduser('~/.ssh/cpanel_key')
+          with open(key_path, 'w') as f:
+              f.write(key)
+          "
           chmod 600 ~/.ssh/cpanel_key
           ssh-keyscan -H "$CPANEL_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: 🧪 Verify SSH Connection
+        env:
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+        run: |
+          ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$CPANEL_USER@$CPANEL_HOST" "echo 'SSH Connection Successful!'"
 
       - name: 🚀 Sync API Backend to cPanel
         run: |
