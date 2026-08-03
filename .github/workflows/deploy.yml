@@ -31,14 +31,18 @@ jobs:
           echo "{\"version\": \"$VERSION\"}" > api/version.json
 
       - name: 🔑 Configure SSH Key
+        env:
+          CPANEL_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
+          echo "$CPANEL_KEY" > ~/.ssh/cpanel_key
           chmod 600 ~/.ssh/cpanel_key
+          ssh-keyscan -H "$CPANEL_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: 🚀 Sync API Backend to cPanel
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             --exclude 'sessions' \
             --exclude 'sessions/' \
             --exclude '*.log' \
@@ -47,7 +51,7 @@ jobs:
 
       - name: 🌐 Sync Frontend Assets to cPanel
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             --exclude 'api' \
             --exclude 'api/' \
             --delete \
