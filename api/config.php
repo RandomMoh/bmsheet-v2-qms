@@ -1,4 +1,5 @@
 <?php
+ini_set('session.use_strict_mode', 1);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_lifetime', 28800);   // 8 hours
 ini_set('session.gc_maxlifetime', 28800);     // Keep session data for 8h
@@ -23,6 +24,12 @@ header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, X-QMS-User, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
+
+// Hardened Security Headers
+header("X-Frame-Options: SAMEORIGIN");
+header("X-Content-Type-Options: nosniff");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: strict-origin-when-cross-origin");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -117,4 +124,67 @@ define('SLACK_BOT_TOKEN', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiA
 define('SLACK_TOKEN_SHIFT1', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
 define('SLACK_TOKEN_SHIFT2', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
 define('SLACK_TOKEN_SHIFT3', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+
+/**
+ * IP-based Rate Limiter (locks after $maxAttempts failed attempts within $decaySeconds)
+ */
+function checkRateLimit($key = 'login', $maxAttempts = 5, $decaySeconds = 300) {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $ip = trim($ips[0]);
+    }
+    
+    $hash = md5($key . '_' . $ip);
+    $dir = __DIR__ . '/sessions/rate_limit';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+    $file = $dir . '/' . $hash . '.json';
+    $now = time();
+    
+    $data = ['attempts' => 0, 'first_attempt' => $now, 'locked_until' => 0];
+    if (file_exists($file)) {
+        $content = @file_get_contents($file);
+        if ($content) {
+            $parsed = json_decode($content, true);
+            if (is_array($parsed)) {
+                $data = array_merge($data, $parsed);
+            }
+        }
+    }
+
+    if ($now - $data['first_attempt'] > $decaySeconds) {
+        $data['attempts'] = 0;
+        $data['first_attempt'] = $now;
+        $data['locked_until'] = 0;
+    }
+
+    if ($data['locked_until'] > $now) {
+        $remaining = $data['locked_until'] - $now;
+        http_response_code(429);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Too many failed attempts. Account locked for security. Please try again in " . ceil($remaining / 60) . " minute(s)."
+        ]);
+        exit();
+    }
+
+    return [
+        'record_attempt' => function() use ($file, &$data, $now, $maxAttempts, $decaySeconds) {
+            $data['attempts']++;
+            if ($data['attempts'] >= $maxAttempts) {
+                $data['locked_until'] = $now + $decaySeconds;
+            }
+            @file_put_contents($file, json_encode($data), LOCK_EX);
+        },
+        'clear_attempts' => function() use ($file) {
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
+    ];
+}
 ?>

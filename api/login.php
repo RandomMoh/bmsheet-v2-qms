@@ -7,6 +7,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 include_once 'config.php';
 
+$rateLimiter = checkRateLimit('login', 5, 300);
+
 $data = json_decode(file_get_contents("php://input"));
 
 if (!isset($data->username) || !isset($data->password)) {
@@ -57,6 +59,9 @@ if (!$q) {
 if (mysqli_num_rows($q) > 0) {
     $row = mysqli_fetch_assoc($q);
     if (checkPassword($password, $row['dpassword'], $row['plain_password'])) {
+        session_regenerate_id(true);
+        $rateLimiter['clear_attempts']();
+
         $userRole = !empty($row['role']) ? $row['role'] : 'CSR';
         $_SESSION['auth'] = true;
         $_SESSION['role'] = $userRole;
@@ -104,5 +109,6 @@ if (mysqli_num_rows($q) > 0) {
     }
 }
 
+$rateLimiter['record_attempt']();
 echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
 ?>
