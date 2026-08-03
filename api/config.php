@@ -100,6 +100,10 @@ if (!in_array($script_name, $exempt_scripts)) {
     }
 }
 
+function isAdmin() {
+    return isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin';
+}
+
 function isSuperAdmin() {
     if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
         $username = isset($_SESSION['username']) ? $_SESSION['username'] : '';

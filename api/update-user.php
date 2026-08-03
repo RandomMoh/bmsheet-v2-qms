@@ -20,6 +20,13 @@ if (!isset($data->id)) {
 
 $id = (int)$data->id;
 
+$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+if (!isAdmin() && $currentUserId !== $id) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Forbidden. You are not authorized to modify this user.']);
+    exit();
+}
+
 $check = mysqli_query($conn, "SELECT d_id FROM `user` WHERE d_id = $id");
 if (mysqli_num_rows($check) === 0) {
     echo json_encode(['status' => 'error', 'message' => 'User not found']);
