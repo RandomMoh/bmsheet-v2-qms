@@ -151,12 +151,12 @@ export default function Login() {
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {[
-              { l: 'Username', t: 'text', v: username, s: e => setUsername(e.target.value), k: 'user' },
-              { l: 'Password', t: 'password', v: password, s: e => setPassword(e.target.value), k: 'pass' },
+              { l: 'Username', t: 'text', v: username, s: e => setUsername(e.target.value.slice(0, 15)), k: 'user', max: 15 },
+              { l: 'Password', t: 'password', v: password, s: e => setPassword(e.target.value.slice(0, 15)), k: 'pass', max: 15 },
             ].map(f => (
               <div key={f.k} style={{ position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: focusField === f.k ? 'var(--accent-primary)' : 'var(--text-main)', marginBottom: 8, transition: 'color 0.15s ease' }}>{f.l}</label>
-                <input type={f.t} value={f.v} onChange={f.s} required
+                <input type={f.t} value={f.v} onChange={f.s} maxLength={f.max} required
                   style={{
                     width: '100%', padding: '10px 14px', background: 'var(--bg-input)', border: `1.5px solid ${focusField === f.k ? 'var(--accent-primary)' : 'var(--border-strong)'}`, borderRadius: 'var(--radius-md)', color: 'var(--text-main)', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',

@@ -332,7 +332,8 @@ export default function Dev() {
               <input 
                 type="password" 
                 value={password} 
-                onChange={e => setPassword(e.target.value)} 
+                onChange={e => setPassword(e.target.value.slice(0, 20))} 
+                maxLength={20}
                 className="brutalist-input" 
                 style={{ width: '100%', boxSizing: 'border-box' }} 
               />
