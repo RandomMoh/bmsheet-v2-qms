@@ -29,3 +29,7 @@ api/sessions/
 api/portal_access_config.json
 cookies.txt
 fix_perms.py
+
+# Admin & Deployment Scripts
+*.py
+*.sql
