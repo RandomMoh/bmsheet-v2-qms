@@ -125,7 +125,7 @@ QMS uses a decoupled client-server architecture.
 ### Backend
 - **Core Engine:** PHP 8.x REST API layer running under Apache/LAMP.
 - **Database:** MySQL relational database handling query records, user credentials, active session tracking, and audit trails.
-- **Integrations:** Slack Webhook receiver for automated ticket ingestion, Gemini AI API connector, and Google Sheets synchronization endpoints.
+- **Integrations:** Slack Webhook receiver for automated ticket ingestion and Groq AI integration for intelligent query processing.
 
 ---
 
