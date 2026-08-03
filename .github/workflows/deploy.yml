@@ -13,10 +13,10 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js 20
+      - name: 🟢 Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: 📦 Install Dependencies
@@ -31,13 +31,14 @@ jobs:
           echo "{\"version\": \"$VERSION\"}" > api/version.json
 
       - name: 🔑 Configure SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.CPANEL_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
+          chmod 600 ~/.ssh/cpanel_key
 
       - name: 🚀 Sync API Backend to cPanel
         run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no" \
             --exclude 'sessions' \
             --exclude 'sessions/' \
             --exclude '*.log' \
@@ -46,7 +47,7 @@ jobs:
 
       - name: 🌐 Sync Frontend Assets to cPanel
         run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -i ~/.ssh/cpanel_key -o StrictHostKeyChecking=no" \
             --exclude 'api' \
             --exclude 'api/' \
             --delete \
