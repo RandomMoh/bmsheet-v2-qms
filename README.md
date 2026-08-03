@@ -13,7 +13,7 @@ Query Management System (QMS) is an operational intelligence dashboard, CSR shif
 
 ## Project architecture
 
-QMS uses a decoupled client-server architecture with automated CI/CD deployment.
+QMS uses a decoupled client-server architecture.
 
 ### Frontend
 - **Framework:** React 18 with Vite 7 build tooling.
@@ -78,14 +78,14 @@ The database contains five primary tables:
 
 ---
 
-## Getting started
+## Local development
 
 ### Prerequisites
 - Node.js 18 or higher
 - PHP 8.0 or higher
 - MySQL / MariaDB database server
 
-### Local installation
+### Setup instructions
 
 1. Clone the repository:
    ```bash
@@ -107,14 +107,3 @@ The database contains five primary tables:
    ```bash
    npm run build
    ```
-
----
-
-## Automated deployment
-
-Production deployments are fully automated using GitHub Actions.
-
-1. Pushing to the `main` branch triggers `.github/workflows/deploy.yml`.
-2. The workflow builds the production assets using Vite and generates pre-compressed Gzip files.
-3. The deployment script updates `api/version.json` with an updated timestamp to refresh user client caches.
-4. Assets are transferred to the cPanel web host (`public_html/qms_react/`) over SSH using `rsync` with `--delete` to clear obsolete bundle files.
