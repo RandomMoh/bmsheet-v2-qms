@@ -145,6 +145,7 @@ const DEPTS_FOR_PROJECT = (project) => {
   return [...new Set(items.map(i => i.d))]
 }
 const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editing', 'Virtual Staging']
+const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
 const API = import.meta.env.VITE_API_BASE_URL
 
