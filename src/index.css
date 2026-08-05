@@ -391,3 +391,41 @@ body {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-3px) scale(1.1); }
 }
+
+/* Keyboard Shortcut Badge */
+.kbd-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  user-select: none;
+}
+
+/* Mobile Responsiveness Enhancements */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+  .toolbar > div {
+    flex: 1 1 100% !important;
+  }
+  .modal-box {
+    max-width: 95vw !important;
+    max-height: 92vh !important;
+    padding: 16px !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .tbl th, .tbl td {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+}

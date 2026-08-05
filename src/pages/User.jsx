@@ -1946,13 +1946,17 @@ export default function CSRPortal() {
   useEffect(() => {
     const handler = (e) => {
       const tag = document.activeElement?.tagName
-      const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)
+      const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable
       const mod = e.ctrlKey || e.metaKey
 
-      if (mod && e.key === 'f') {
+      if (mod && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault()
+        searchRef.current?.focus()
+      } else if (!inInput && e.key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
       }
+
       if (e.key === 'Escape') {
         setDet(null)
         setExt(null)
@@ -2397,9 +2401,10 @@ export default function CSRPortal() {
               <ProjectSelect selected={selectedProjects} onChange={handleProjectFilterChange} allProjects={PROJECTS} />
               <div style={{ flex: '1 1 200px' }}>
                 <label className="lbl">Search</label>
-                <div className="inp-icon-wrap">
+                <div className="inp-icon-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <Icon paths={IC.search} size={14} />
-                  <input ref={searchRef} type="text" placeholder="Search any field… (Ctrl+F)" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="inp" />
+                  <input ref={searchRef} type="text" placeholder="Search any field… (Press / to focus)" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="inp" style={{ paddingRight: 32 }} />
+                  <kbd className="kbd-badge" style={{ position: 'absolute', right: 8, pointerEvents: 'none' }}>/</kbd>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
