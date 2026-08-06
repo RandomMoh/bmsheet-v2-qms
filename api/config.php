@@ -98,8 +98,8 @@ if (!in_array($script_name, $exempt_scripts)) {
         echo json_encode(["status" => "error", "message" => "Unauthorized Access. Please log in."]);
         exit();
     }
+    session_write_close();
 }
-session_write_close();
 
 function isAdmin() {
     return isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin';
