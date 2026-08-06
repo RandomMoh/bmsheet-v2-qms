@@ -99,6 +99,7 @@ if (!in_array($script_name, $exempt_scripts)) {
         exit();
     }
 }
+session_write_close();
 
 function isAdmin() {
     return isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin';

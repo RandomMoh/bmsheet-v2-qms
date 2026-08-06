@@ -2052,60 +2052,6 @@ export default function CSRPortal() {
     </select>
   )
 
-  const submitAction = async action => {
-    const orderId = det.id
-    setDet(null)
-    queryClient.setQueryData(['currentOrders', fromDate, toDate], old => (old || []).filter(o => o.id !== orderId))
-    queryClient.setQueryData(['issueOrders'], old => (old || []).filter(o => o.id !== orderId))
-    try {
-      const res = await fetch(`${API}/mark-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, action, instruction: dNotes, completed_by: displayName, manual_date: dManual ? dManual.replace('T', ' ') + ':00' : '' }) })
-      const data = await res.json()
-      if (data.status !== 'success') setToast(data.message || 'Action failed')
-    } catch { setToast('Network error — changes may not have saved') }
-    finally { invalidateAll() }
-  }
-
-  const submitExt = async () => {
-    const extId = ext.id
-    setExtBusy(true)
-    try { 
-      const res = await fetch(`${API}/extend-time.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: extId, extra_hours: extH }) }) 
-      const data = await res.json()
-      if (data.status !== 'success') setToast(data.message || 'Extension failed')
-    }
-    catch { setToast('Extension failed — network error') }
-    finally { setExtBusy(false); setExt(null); invalidateAll() }
-  }
-
-  const submitResolve = async () => {
-    if (!resOrd) return
-    const orderId = resOrd.id
-    setResOrd(null); setResText('')
-    queryClient.setQueryData(['issueOrders'], old => (old || []).filter(o => o.id !== orderId))
-    try {
-      const res = await fetch(`${API}/mark-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, action: 'resolve', resolution: resText, instruction: resOrd.instruction || '', completed_by: displayName }) })
-      const data = await res.json()
-      if (data.status !== 'success') setToast(data.message || 'Resolve failed')
-    } catch { setToast('Network error — changes may not have saved') }
-    finally { invalidateAll() }
-  }
-
-
-  const isManager = displayRole !== 'CSR'
-  const navGroups = useMemo(() => [
-    { label: 'Workspace', items: [
-      { id: 'current', label: 'Current Queue', icon: IC.bolt },
-      { id: 'issue', label: 'Emailed / Issue', icon: IC.mail },
-      { id: 'done', label: 'Done Queries', icon: IC.check },
-    ]},
-    { label: 'Analytics', items: [
-      { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
-      ...(isManager ? [{ id: 'csr_shifts', label: 'CSR Shifts & Live Status', icon: IC.user }] : []),
-      { id: 'reports', label: 'Legacy Reports', icon: IC.chart }
-    ] },
-    { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: IC.user }] },
-  ], [isManager])
-
   useEffect(() => {
     if (!user) return
     const ping = async () => {
