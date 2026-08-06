@@ -1923,12 +1923,10 @@ export default function CSRPortal() {
       const res = await fetch(`${API}/add-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await res.json()
       if (data.status === 'success') {
-        setFb({ ok: true, msg: data.message })
-        setTimeout(() => {
-          setOpen(false)
-          queryClient.refetchQueries({ queryKey: ['currentOrders'] })
-          queryClient.refetchQueries({ queryKey: ['stats'] })
-        }, 1200)
+        setOpen(false)
+        setToast(data.message || 'Query added successfully')
+        queryClient.refetchQueries({ queryKey: ['currentOrders'] })
+        queryClient.refetchQueries({ queryKey: ['stats'] })
       }
       else setFb({ ok: false, msg: data.message })
     } catch { setFb({ ok: false, msg: 'Network error.' }) } finally { setBusy(false) }
