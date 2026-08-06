@@ -1919,17 +1919,18 @@ export default function CSRPortal() {
       received_datetime: recvTime ? recvTime.replace('T', ' ') + ':00' : '',
       first_reply_datetime: firstReplyTime ? firstReplyTime.replace('T', ' ') + ':00' : '',
     }
+    setOpen(false)
+    setToast('Adding query...')
     try {
       const res = await fetch(`${API}/add-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await res.json()
       if (data.status === 'success') {
-        setOpen(false)
         setToast(data.message || 'Query added successfully')
         queryClient.refetchQueries({ queryKey: ['currentOrders'] })
         queryClient.refetchQueries({ queryKey: ['stats'] })
       }
-      else setFb({ ok: false, msg: data.message })
-    } catch { setFb({ ok: false, msg: 'Network error.' }) } finally { setBusy(false) }
+      else setToast(`Error: ${data.message}`)
+    } catch { setToast('Network error — query may not have saved.') } finally { setBusy(false) }
   }
 
   const openDet = o => { setDet(o); setDNotes(o.instruction || ''); setDManual(''); setDFb(null) }
@@ -1940,6 +1941,62 @@ export default function CSRPortal() {
     queryClient.refetchQueries({ queryKey: ['doneOrders'] })
     queryClient.refetchQueries({ queryKey: ['stats'] })
   }
+
+  const handleMark = async (orderId, action) => {
+    setDet(null)
+    queryClient.setQueryData(['currentOrders', fromDate, toDate], old => (old || []).filter(o => o.id !== orderId))
+    queryClient.setQueryData(['issueOrders'], old => (old || []).filter(o => o.id !== orderId))
+    try {
+      const res = await fetch(`${API}/mark-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, action, instruction: dNotes, completed_by: displayName, manual_date: dManual ? dManual.replace('T', ' ') + ':00' : '' }) })
+      const data = await res.json()
+      if (data.status !== 'success') setToast(data.message || 'Action failed')
+    } catch { setToast('Network error — changes may not have saved') }
+    finally { invalidateAll() }
+  }
+
+  const submitExt = async () => {
+    if (!ext) return
+    const extId = ext.id
+    setExt(null)
+    setToast('Extending deadline...')
+    try { 
+      const res = await fetch(`${API}/extend-time.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: extId, extra_hours: extH }) }) 
+      const data = await res.json()
+      if (data.status !== 'success') setToast(data.message || 'Extension failed')
+      else setToast('Deadline extended successfully')
+    }
+    catch { setToast('Extension failed — network error') }
+    finally { setExtBusy(false); invalidateAll() }
+  }
+
+  const submitResolve = async () => {
+    if (!resOrd) return
+    const orderId = resOrd.id
+    setResOrd(null); setResText('')
+    queryClient.setQueryData(['issueOrders'], old => (old || []).filter(o => o.id !== orderId))
+    try {
+      const res = await fetch(`${API}/mark-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, action: 'resolve', resolution: resText, instruction: resOrd.instruction || '', completed_by: displayName }) })
+      const data = await res.json()
+      if (data.status !== 'success') setToast(data.message || 'Resolve failed')
+    } catch { setToast('Network error — changes may not have saved') }
+    finally { invalidateAll() }
+  }
+
+
+  const isManager = displayRole !== 'CSR'
+  const navGroups = useMemo(() => [
+    { label: 'Workspace', items: [
+      { id: 'current', label: 'Current Queue', icon: IC.bolt },
+      { id: 'issue', label: 'Emailed / Issue', icon: IC.mail },
+      { id: 'done', label: 'Done Queries', icon: IC.check },
+    ]},
+    { label: 'Analytics', items: [
+      { id: 'qms_dashboard', label: 'Dashboard', icon: IC.chart },
+      ...(isManager ? [{ id: 'csr_shifts', label: 'CSR Shifts & Live Status', icon: IC.user }] : []),
+      { id: 'reports', label: 'Legacy Reports', icon: IC.chart }
+    ] },
+    { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: IC.user }] },
+  ], [isManager])
 
   useEffect(() => {
     const handler = (e) => {
