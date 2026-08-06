@@ -30,7 +30,7 @@ export default function SlackThreadViewer({ slackTs, orderId, onClose }) {
   return (
     <>
       <div className="overlay" onClick={onClose} style={{ zIndex: 100 }} />
-      <div className="dialog-wrap" style={{ zIndex: 101 }}>
+      <div className="dialog-wrap" style={{ zIndex: 101 }} onClick={onClose}>
         <div className="dialog fade-up" style={{ maxWidth: 600, background: 'var(--bg-panel)', border: '2px solid var(--border-strong)', borderRadius: 0, boxShadow: '8px 8px 0px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
           <div className="dialog-head" style={{ borderBottom: '2px solid var(--border-strong)', padding: '16px 20px', background: 'var(--bg-sunken)' }}>
             <h2 style={{ fontFamily: 'monospace', margin: 0, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
