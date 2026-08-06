@@ -38,7 +38,7 @@ $order_id = mysqli_real_escape_string($conn, trim($body['order_id']));
 $qname = mysqli_real_escape_string($conn, trim($body['qname']));
 $reminder = isset($body['reminder_hours']) ? (float)$body['reminder_hours'] : 4.0;
 
-$dup = mysqli_query($conn, "SELECT id FROM `order` WHERE `propery-order` = '$order_id' AND `query_done` IS NULL AND (`status` IS NULL OR `status` != 'issue') LIMIT 1");
+$dup = mysqli_query($conn, "SELECT id FROM `order` WHERE `propery-order` = '$order_id' AND `department` = '$department' AND `query_done` IS NULL AND (`status` IS NULL OR `status` != 'issue') LIMIT 1");
 if ($dup && mysqli_num_rows($dup) > 0) {
     echo json_encode(['status' => 'error', 'message' => "Duplicate: Order '$order_id' already exists in the queue"]);
     mysqli_close($conn);

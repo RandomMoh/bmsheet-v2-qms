@@ -586,6 +586,7 @@ foreach ($extractedOrders as $singleOrder) {
     $dup_res = mysqli_query($conn,
         "SELECT id, status FROM `order`
          WHERE `propery-order` = '$esc_orderId'
+         AND `department` = '$esc_dept'
          ORDER BY id DESC LIMIT 1"
     );
     
