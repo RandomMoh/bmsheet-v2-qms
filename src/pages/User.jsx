@@ -1942,17 +1942,23 @@ export default function CSRPortal() {
     queryClient.refetchQueries({ queryKey: ['stats'] })
   }
 
-  const handleMark = async (orderId, action) => {
+  const submitAction = async action => {
+    if (!det) return
+    const orderId = det.id
     setDet(null)
+    setToast(action === 'complete' ? 'Marking complete...' : 'Reporting issue...')
     queryClient.setQueryData(['currentOrders', fromDate, toDate], old => (old || []).filter(o => o.id !== orderId))
     queryClient.setQueryData(['issueOrders'], old => (old || []).filter(o => o.id !== orderId))
     try {
       const res = await fetch(`${API}/mark-order.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, action, instruction: dNotes, completed_by: displayName, manual_date: dManual ? dManual.replace('T', ' ') + ':00' : '' }) })
       const data = await res.json()
       if (data.status !== 'success') setToast(data.message || 'Action failed')
+      else setToast(action === 'complete' ? 'Order marked as complete!' : 'Issue reported successfully')
     } catch { setToast('Network error — changes may not have saved') }
     finally { invalidateAll() }
   }
+
+  const handleMark = (orderId, action) => submitAction(action)
 
   const submitExt = async () => {
     if (!ext) return
