@@ -726,35 +726,27 @@ const DL_PRESETS = [
   { label: '12h', hours: 12 },
 ]
 
-function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr, label = "Deadline Target", isExtending = false }) {
+function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr }) {
   return (
-    <div className="deadline-picker-shell">
-      <div className="deadline-picker-core">
-        {/* Live Target Display */}
-        <div className="deadline-target-card" style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="deadline-target-label">{label}</span>
-            <span className="deadline-target-time">{targetTimeStr}</span>
-          </div>
-          <div className="deadline-hours-badge">
-            <Clock size={13} />
-            <span>{hoursValue < 1 ? `${Math.round(hoursValue * 60)}m` : `${hoursValue}h`}</span>
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+      {/* Quick Presets */}
+      <div className="deadline-preset-grid" style={{ marginBottom: 0 }}>
+        {DL_PRESETS.map(p => (
+          <button
+            key={p.hours}
+            type="button"
+            className={`deadline-preset-btn ${hoursValue === p.hours ? 'active' : ''}`}
+            onClick={() => onChangeHours(p.hours)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Quick Presets */}
-        <div className="deadline-preset-grid" style={{ marginBottom: 0 }}>
-          {DL_PRESETS.map(p => (
-            <button
-              key={p.hours}
-              type="button"
-              className={`deadline-preset-btn ${hoursValue === p.hours ? 'active' : ''}`}
-              onClick={() => onChangeHours(p.hours)}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+      {/* Simple Text Target */}
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 2 }}>
+        <Clock size={12} style={{ color: 'var(--accent-primary)' }} />
+        <span>Target: <strong style={{ color: 'var(--text-main)', fontFamily: 'monospace' }}>{targetTimeStr}</strong></span>
       </div>
     </div>
   )
