@@ -2721,8 +2721,8 @@ export default function CSRPortal() {
         <div className="dialog-wrap" onClick={() => !busy && setOpen(false)}>
           <div className="dialog scale-in" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head">
-              <h2>New Query</h2>
-              <button className="dialog-close" onClick={() => !busy && setOpen(false)}><Icon paths={IC.close} size={16} /></button>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} className="dialog-title-icon" />New Query</h2>
+              <button className="dialog-close" onClick={() => !busy && setOpen(false)}><X size={16} /></button>
             </div>
             <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div><label className="lbl">Communication Medium</label>
@@ -2775,8 +2775,8 @@ export default function CSRPortal() {
         <div className="dialog-wrap" onClick={() => !dBusy && setDet(null)}>
           <div className="dialog scale-in" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head">
-              <h2>Order #{det.id}</h2>
-              <button className="dialog-close" onClick={() => !dBusy && setDet(null)}><Icon paths={IC.close} size={16} /></button>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} className="dialog-title-icon" />Order #{det.id}</h2>
+              <button className="dialog-close" onClick={() => !dBusy && setDet(null)}><X size={16} /></button>
             </div>
             <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="detail-grid">
@@ -2818,10 +2818,10 @@ export default function CSRPortal() {
           <div className="dialog scale-in" style={{ maxWidth: 360, padding: 24 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Icon paths={IC.clock} size={14} />
+                <Clock size={18} className="dialog-title-icon" />
                 <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Extend Deadline</h2>
               </div>
-              <button className="dialog-close" onClick={() => !extBusy && setExt(null)}><Icon paths={IC.close} size={16} /></button>
+              <button className="dialog-close" onClick={() => !extBusy && setExt(null)}><X size={16} /></button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>#{ext.id} — {ext['propery-order']}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
@@ -2838,8 +2838,8 @@ export default function CSRPortal() {
         <div className="dialog-wrap" onClick={() => !resBusy && setResOrd(null)}>
           <div className="dialog scale-in" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head">
-              <h2>Resolve Issue: #{resOrd.id}</h2>
-              <button className="dialog-close" onClick={() => !resBusy && setResOrd(null)}><Icon paths={IC.close} size={16} /></button>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><CheckCircle2 size={18} className="dialog-title-icon" />Resolve Issue: #{resOrd.id}</h2>
+              <button className="dialog-close" onClick={() => !resBusy && setResOrd(null)}><X size={16} /></button>
             </div>
             <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {resOrd.instruction && <div style={{ padding: '12px 14px', background: 'var(--status-warning-bg)', border: '1px solid var(--status-warning)', borderRadius: 8, fontSize: 13, color: 'var(--status-warning-text)' }}><strong>Issue:</strong> {resOrd.instruction}</div>}
