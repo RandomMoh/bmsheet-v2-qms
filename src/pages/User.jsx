@@ -2953,7 +2953,10 @@ export default function CSRPortal() {
             <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="detail-grid">
                 {[['Received', fmtDt(det['query-received_datetime'])], ['Medium', det.communication_medium], ['Project', det.project_name], ['Dept', det.department], ['Type', det.type], ['Order ID', det['propery-order']], ['1st Reply', fmtDt(det['query-first-reply_datetime'])], ['Entered By', det.qname]].map(([l, v]) => (
-                  <div key={l} className="detail-cell"><div className="detail-cell-label">{l}</div><div className="detail-cell-val">{v || '—'}</div></div>
+                  <div key={l} className="detail-cell" style={l === 'Order ID' ? { gridColumn: '1 / -1' } : {}}>
+                    <div className="detail-cell-label">{l}</div>
+                    <div className="detail-cell-val" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal', lineHeight: 1.45 }}>{v || '—'}</div>
+                  </div>
                 ))}
               </div>
               <div>

@@ -318,13 +318,14 @@ textarea.inp { resize:none; }
 .pager-btns { display:flex; gap:6px; }
 
 /* ══ DETAIL GRID ══ */
-.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; }
 .detail-cell {
   padding:12px 14px; background:var(--bg-sunken);
   border:1px solid var(--border-subtle); border-radius:8px;
+  min-width:0;
 }
 .detail-cell-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin-bottom:4px; }
-.detail-cell-val { font-size:13px; font-weight:500; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.detail-cell-val { font-size:13px; font-weight:500; color:var(--text-main); word-break:break-word; overflow-wrap:anywhere; white-space:normal; line-height:1.45; }
 
 /* ══ FEEDBACK ══ */
 .fb { padding:10px 14px; border-radius:8px; font-size:12px; font-weight:500; }
