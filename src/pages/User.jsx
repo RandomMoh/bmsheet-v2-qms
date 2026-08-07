@@ -240,8 +240,7 @@ function elapsedStr(from, to = Date.now()) {
   const da = parsePKT(from)
   const db = typeof to === 'number' ? new Date(to) : parsePKT(to)
   if (!da || !db) return '—'
-  const ms = db.getTime() - da.getTime()
-  if (ms < 0) return '—'
+  const ms = Math.max(0, db.getTime() - da.getTime())
   const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24)
   if (d > 0) return `${d}d ${h % 24}h`
   if (h > 0) return `${h}h ${m % 60}m`
@@ -275,21 +274,20 @@ function getPKTDateStr(d = new Date()) {
   }
 }
 
-
-
 function diffMin(a, b) {
   if (!a || !b) return null
   const da = parsePKT(a)
   const db = parsePKT(b)
   if (!da || !db) return null
   const diff = (db.getTime() - da.getTime()) / 60000
-  if (isNaN(diff) || diff < 0) return null
-  return diff
+  if (isNaN(diff)) return null
+  return Math.max(0, diff)
 }
 
 function durStr(min) {
-  if (min === null || min < 0 || isNaN(min)) return '—'
-  const h = Math.floor(min / 60), m = Math.round(min % 60)
+  if (min === null || min === undefined || isNaN(min)) return '—'
+  const safeMin = Math.max(0, min)
+  const h = Math.floor(safeMin / 60), m = Math.round(safeMin % 60)
   return h ? `${h}h ${m}m` : `${m}m`
 }
 function parseDurH(s) {
