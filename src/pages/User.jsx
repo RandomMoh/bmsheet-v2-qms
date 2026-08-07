@@ -715,12 +715,67 @@ function defaultPKTDL(extraHours = 4) {
 }
 
 const DL_PRESETS = [
-  { label: '30 Mins', hours: 0.5 },
-  { label: '2 Hours', hours: 2 },
-  { label: '4 Hours', hours: 4 },
-  { label: '6 Hours', hours: 6 },
-  { label: '8 Hours', hours: 8 },
+  { label: '30m', hours: 0.5 },
+  { label: '1h', hours: 1 },
+  { label: '2h', hours: 2 },
+  { label: '4h (Std)', hours: 4 },
+  { label: '6h', hours: 6 },
+  { label: '8h', hours: 8 },
+  { label: '12h', hours: 12 },
 ]
+
+function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr, label = "Deadline Target", isExtending = false }) {
+  return (
+    <div className="deadline-picker-shell">
+      <div className="deadline-picker-core">
+        {/* Live Target Display */}
+        <div className="deadline-target-card">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span className="deadline-target-label">{label}</span>
+            <span className="deadline-target-time">{targetTimeStr}</span>
+          </div>
+          <div className="deadline-hours-badge">
+            <Clock size={13} />
+            <span>{hoursValue < 1 ? `${Math.round(hoursValue * 60)}m` : `${hoursValue}h`}</span>
+          </div>
+        </div>
+
+        {/* Quick Presets */}
+        <div className="deadline-preset-grid">
+          {DL_PRESETS.map(p => (
+            <button
+              key={p.hours}
+              type="button"
+              className={`deadline-preset-btn ${hoursValue === p.hours ? 'active' : ''}`}
+              onClick={() => onChangeHours(p.hours)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Interactive Scrub Slider */}
+        <div className="deadline-slider-wrap">
+          <div className="deadline-slider-labels">
+            <span>30m</span>
+            <span>4h (Std)</span>
+            <span>8h</span>
+            <span>12h</span>
+          </div>
+          <input
+            type="range"
+            min="0.5"
+            max="12"
+            step="0.5"
+            value={hoursValue}
+            onChange={e => onChangeHours(parseFloat(e.target.value))}
+            className="deadline-range-slider"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const METRIC_COLORS = ['m-teal', 'm-amber', 'm-green', 'm-blue']
 const METRIC_ICONS = [IC.bolt, IC.mail, IC.check, IC.chart]
@@ -2775,22 +2830,28 @@ export default function CSRPortal() {
               <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" /></div>
               <div><label className="lbl">First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label><input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
               <div>
-                <label className="lbl">Deadline</label>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                  {DL_PRESETS.map(p => <button key={p.hours} type="button" onClick={() => { setDlMode(String(p.hours)); const d = defaultPKTDL(p.hours); setDlH(d.h); setDlMin(d.min); setDlAp(d.ap) }} style={togBtn(dlMode === String(p.hours))}>{p.label}</button>)}
-                </div>
-                {(() => {
-                  const pktNow = nowPKT()
-                  let h = parseInt(dlH) % 12; if (dlAp === 'PM') h += 12
-                  let nowH = pktNow.h
-                  if (pktNow.ap === 'PM' && nowH !== 12) nowH += 12
-                  if (pktNow.ap === 'AM' && nowH === 12) nowH = 0
-                  let nowMins = nowH * 60 + pktNow.m
-                  let targetMins = h * 60 + parseInt(dlMin || 0)
-                  if (targetMins <= nowMins) targetMins += 24 * 60
-                  const rem = Math.max(0, (targetMins - nowMins) / 60)
-                  return <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '6px 0 0' }}>Deadline: {dlH}:{dlMin} {dlAp} PKT — {rem.toFixed(1)}h from now</p>
-                })()}
+                <label className="lbl">Deadline SLA</label>
+                <DynamicDeadlinePicker
+                  hoursValue={parseFloat(dlMode) || 4}
+                  onChangeHours={h => {
+                    setDlMode(String(h))
+                    const d = defaultPKTDL(h)
+                    setDlH(d.h); setDlMin(d.min); setDlAp(d.ap)
+                  }}
+                  label="Calculated Target Deadline"
+                  targetTimeStr={(() => {
+                    const pktNow = nowPKT()
+                    let h = parseInt(dlH) % 12; if (dlAp === 'PM') h += 12
+                    let nowH = pktNow.h
+                    if (pktNow.ap === 'PM' && nowH !== 12) nowH += 12
+                    if (pktNow.ap === 'AM' && nowH === 12) nowH = 0
+                    let nowMins = nowH * 60 + pktNow.m
+                    let targetMins = h * 60 + parseInt(dlMin || 0)
+                    if (targetMins <= nowMins) targetMins += 24 * 60
+                    const rem = Math.max(0, (targetMins - nowMins) / 60)
+                    return `${dlH}:${dlMin} ${dlAp} PKT (${rem.toFixed(1)}h from now)`
+                  })()}
+                />
               </div>
               {fb && <div className={`fb ${fb.ok ? 'fb-ok' : 'fb-err'}`}>{fb.msg}</div>}
               <button type="submit" disabled={busy} className="btn btn-primary" style={{ width: '100%', padding: '11px', marginTop: 4 }}>{busy ? 'Submitting…' : 'Submit Query'}</button>
@@ -2845,7 +2906,7 @@ export default function CSRPortal() {
       {ext && (<>
         <div className="overlay" onClick={() => !extBusy && setExt(null)} />
         <div className="dialog-wrap" onClick={() => !extBusy && setExt(null)}>
-          <div className="dialog scale-in" style={{ maxWidth: 360, padding: 24 }} onClick={e => e.stopPropagation()}>
+          <div className="dialog scale-in" style={{ maxWidth: 440, padding: 24 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={18} className="dialog-title-icon" />
@@ -2853,11 +2914,21 @@ export default function CSRPortal() {
               </div>
               <button className="dialog-close" onClick={() => !extBusy && setExt(null)}><X size={16} /></button>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>#{ext.id} — {ext['propery-order']}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 20 }}>
-              {[0.5, 1, 2, 3, 4, 6].map(h => <button key={h} type="button" onClick={() => setExtH(h)} style={togBtn(extH === h)}>{h < 1 ? '30m' : `${h}h`}</button>)}
-            </div>
-            <button onClick={submitExt} disabled={extBusy} className="btn btn-primary" style={{ width: '100%', padding: 11 }}>{extBusy ? 'Extending…' : 'Apply Extension'}</button>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>#{ext.id} — {ext['propery-order']}</p>
+            
+            <DynamicDeadlinePicker
+              hoursValue={extH}
+              onChangeHours={h => setExtH(h)}
+              label="New Extended Target Time"
+              targetTimeStr={(() => {
+                const baseSec = Number(ext._deadline) || (Math.floor(Date.now() / 1000) + 14400)
+                const newSec = baseSec + (extH * 3600)
+                return fmtDt(new Date(newSec * 1000))
+              })()}
+              isExtending={true}
+            />
+
+            <button onClick={submitExt} disabled={extBusy} className="btn btn-primary" style={{ width: '100%', padding: 11, marginTop: 6 }}>{extBusy ? 'Extending…' : 'Apply Extension'}</button>
           </div>
         </div>
       </>)}
