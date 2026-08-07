@@ -682,7 +682,9 @@ function Countdown({ deadline }) {
   return <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 500, color: diff < 1800 ? 'var(--status-warning)' : 'var(--text-main)' }}>{String(h).padStart(2, '0')}h {String(m).padStart(2, '0')}m</span>
 }
 function LiveElapsed({ since }) {
-  const ms = Date.now() - new Date(since).getTime()
+  const da = parsePKT(since)
+  if (!da) return <span>—</span>
+  const ms = Date.now() - da.getTime()
   const m = Math.floor(ms / 60000), h = Math.floor(m / 60)
   const bad = h >= 2
   return <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 500, color: bad ? 'var(--status-danger)' : h >= 1 ? 'var(--status-warning)' : 'var(--text-main)' }}>{elapsedStr(since)}</span>
@@ -696,13 +698,20 @@ function Toast({ msg, onClose }) {
     </div>
   )
 }
-function defaultPKTDL() {
-  const t = new Date(Date.now() + 4 * 3600000)
-  let h = t.getHours(), m = t.getMinutes()
-  const ap = h >= 12 ? 'PM' : 'AM'
-  h = h % 12 || 12
-  const min = String(Math.floor(m / 5) * 5).padStart(2, '0')
-  return { h: String(h), min, ap }
+function defaultPKTDL(extraHours = 4) {
+  const pktNow = nowPKT()
+  let h = pktNow.h
+  if (pktNow.ap === 'PM' && h !== 12) h += 12
+  if (pktNow.ap === 'AM' && h === 12) h = 0
+  
+  const totalMins = (h * 60 + pktNow.m) + Math.round(extraHours * 60)
+  const targetH = Math.floor(totalMins / 60) % 24
+  const targetM = totalMins % 60
+  
+  const ap = targetH >= 12 ? 'PM' : 'AM'
+  const displayH = targetH % 12 || 12
+  const min = String(Math.floor(targetM / 5) * 5).padStart(2, '0')
+  return { h: String(displayH), min, ap }
 }
 
 const DL_PRESETS = [
@@ -1969,12 +1978,16 @@ export default function CSRPortal() {
       setBusy(false)
       return
     }
-    const now = new Date()
+    const recvDate = parsePKT(recvTime) || new Date()
     let tH = parseInt(dlH) % 12
     if (dlAp === 'PM') tH += 12
-    const target = new Date(); target.setHours(tH, parseInt(dlMin), 0, 0)
-    if (target <= now) target.setDate(target.getDate() + 1)
-    const reminder_hours = Math.max(0.25, (target - now) / 3600000)
+    const dateStr = getPKTDateStr(recvDate)
+    const targetStr = `${dateStr}T${String(tH).padStart(2, '0')}:${String(dlMin).padStart(2, '0')}:00+05:00`
+    let targetDate = parsePKT(targetStr) || new Date()
+    if (targetDate <= recvDate) {
+      targetDate = new Date(targetDate.getTime() + 24 * 3600000)
+    }
+    const reminder_hours = Math.max(0.25, (targetDate.getTime() - recvDate.getTime()) / 3600000)
     const payload = {
       ...form,
       qname: displayName,
@@ -2767,11 +2780,15 @@ export default function CSRPortal() {
                   {DL_PRESETS.map(p => <button key={p.hours} type="button" onClick={() => { setDlMode(String(p.hours)); const d = defaultPKTDL(p.hours); setDlH(d.h); setDlMin(d.min); setDlAp(d.ap) }} style={togBtn(dlMode === String(p.hours))}>{p.label}</button>)}
                 </div>
                 {(() => {
-                  const now = nowPKT()
+                  const pktNow = nowPKT()
                   let h = parseInt(dlH) % 12; if (dlAp === 'PM') h += 12
-                  const t = new Date(); t.setHours(h, parseInt(dlMin), 0, 0)
-                  if (t <= now) t.setDate(t.getDate() + 1)
-                  const rem = Math.max(0, (t - now) / 3600000)
+                  let nowH = pktNow.h
+                  if (pktNow.ap === 'PM' && nowH !== 12) nowH += 12
+                  if (pktNow.ap === 'AM' && nowH === 12) nowH = 0
+                  let nowMins = nowH * 60 + pktNow.m
+                  let targetMins = h * 60 + parseInt(dlMin || 0)
+                  if (targetMins <= nowMins) targetMins += 24 * 60
+                  const rem = Math.max(0, (targetMins - nowMins) / 60)
                   return <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '6px 0 0' }}>Deadline: {dlH}:{dlMin} {dlAp} PKT — {rem.toFixed(1)}h from now</p>
                 })()}
               </div>
