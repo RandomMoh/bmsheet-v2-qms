@@ -1992,8 +1992,8 @@ export default function CSRPortal() {
     doc.save(`QMS_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
-  const logout = async (reason) => {
-    try { await fetch(`${API}/logout.php`); } catch (e) {}
+  const logout = (reason) => {
+    try { fetch(`${API}/logout.php`, { keepalive: true }).catch(() => {}); } catch (e) {}
     sessionStorage.removeItem('qmsUser');
     sessionStorage.removeItem('qmsRole');
     sessionStorage.removeItem('qmsDeployVersion');
