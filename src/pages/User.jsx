@@ -1763,13 +1763,13 @@ export default function CSRPortal() {
         if (!dl || isNaN(dl)) {
           if (!o['query-received_datetime']) return false
           const dtStr = String(o['query-received_datetime']).replace(/-/g, '/')
-          const r = new Date(dtStr)
-          if (isNaN(r.getTime())) return false
+          const r = parsePKT(dtStr)
+          if (!r || isNaN(r.getTime())) return false
           const hours = parseFloat(o.reminder_hours) || 4
           dl = Math.floor(r.getTime() / 1000) + Math.floor(hours * 3600)
         }
         const remSec = dl - nowSec
-        return remSec <= 1800
+        return remSec > 0 && remSec <= 1800
       })
     } catch (e) {
       console.error('dueSoonOrders error:', e)
