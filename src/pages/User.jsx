@@ -1629,13 +1629,13 @@ export default function CSRPortal() {
     const s = sessionStorage.getItem('qmsUser'), r = sessionStorage.getItem('qmsRole')
     if (!s || r !== 'user') { navigate('/'); return }
 
-    // Check if user was inactive for > 1 hour (3600000 ms)
+    // Check if user was inactive for > 30 minutes (1800000 ms)
     const lastActiveStr = localStorage.getItem('qmsLastActive')
     const now = Date.now()
     if (lastActiveStr) {
       const lastActive = parseInt(lastActiveStr, 10)
-      if (!isNaN(lastActive) && (now - lastActive) > 3600000) {
-        logout('Session expired due to 1 hour of inactivity.')
+      if (!isNaN(lastActive) && (now - lastActive) > 1800000) {
+        logout('Session expired due to 30 minutes of inactivity.')
         return
       }
     } else {
@@ -2229,13 +2229,13 @@ export default function CSRPortal() {
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
     events.forEach(ev => window.addEventListener(ev, updateActivity, { passive: true }))
 
-    // Check every 10 seconds if idle duration > 1 hour (3600000 ms)
+    // Check every 10 seconds if idle duration > 30 minutes (1800000 ms)
     const checkIdleTimer = setInterval(() => {
       const lastActiveStr = localStorage.getItem('qmsLastActive')
       if (lastActiveStr) {
         const lastActive = parseInt(lastActiveStr, 10)
-        if (!isNaN(lastActive) && (Date.now() - lastActive) > 3600000) {
-          logout('Session expired due to 1 hour of inactivity.')
+        if (!isNaN(lastActive) && (Date.now() - lastActive) > 1800000) {
+          logout('Session expired due to 30 minutes of inactivity.')
         }
       }
     }, 10000)
