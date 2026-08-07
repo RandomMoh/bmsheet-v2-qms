@@ -2206,7 +2206,7 @@ export default function CSRPortal() {
           if (!currentDeployVer) {
             sessionStorage.setItem('qmsDeployVersion', data.deploy_version)
           } else if (currentDeployVer !== data.deploy_version) {
-            logout('System was updated with a new version. Please sign in again to load the latest features.')
+            logout('System was updated. Kindly press CTRL + SHIFT + R then login.')
             return
           }
         }
@@ -2802,13 +2802,13 @@ export default function CSRPortal() {
       {open && (<>
         <div className="overlay" onClick={() => !busy && setOpen(false)} />
         <div className="dialog-wrap" onClick={() => !busy && setOpen(false)}>
-          <div className="dialog scale-in" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-            <div className="dialog-head">
+          <div className="dialog scale-in" style={{ maxWidth: 560, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div className="dialog-head" style={{ padding: '14px 20px', flexShrink: 0 }}>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} className="dialog-title-icon" />New Query</h2>
               <button className="dialog-close" onClick={() => !busy && setOpen(false)}><X size={16} /></button>
             </div>
-            <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div><label className="lbl">Communication Medium</label>
+            <form onSubmit={handleSubmit} className="dialog-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 14px', padding: '16px 20px 20px', overflowY: 'auto' }}>
+              <div><label className="lbl">Medium</label>
                 <select name="medium" value={form.medium} onChange={fc} className="inp">
                   {MEDIUMS.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
@@ -2830,9 +2830,9 @@ export default function CSRPortal() {
               </div>
               <div><label className="lbl">Order ID</label><input name="order_id" value={form.order_id} onChange={fc} placeholder="e.g. ORD-1234" className="inp" /></div>
               <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp date-picker-inp" /></div>
-              <div><label className="lbl">First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label><input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp date-picker-inp" /></div>
-              <div>
-                <label className="lbl">Deadline SLA</label>
+              <div style={{ gridColumn: '1 / -1' }}><label className="lbl">First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label><input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp date-picker-inp" /></div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="lbl" style={{ marginBottom: 2 }}>Deadline SLA</label>
                 <DynamicDeadlinePicker
                   hoursValue={parseFloat(dlMode) || 4}
                   onChangeHours={h => {
@@ -2855,8 +2855,8 @@ export default function CSRPortal() {
                   })()}
                 />
               </div>
-              {fb && <div className={`fb ${fb.ok ? 'fb-ok' : 'fb-err'}`}>{fb.msg}</div>}
-              <button type="submit" disabled={busy} className="btn btn-primary" style={{ width: '100%', padding: '11px', marginTop: 4 }}>{busy ? 'Submitting…' : 'Submit Query'}</button>
+              {fb && <div style={{ gridColumn: '1 / -1' }} className={`fb ${fb.ok ? 'fb-ok' : 'fb-err'}`}>{fb.msg}</div>}
+              <button style={{ gridColumn: '1 / -1', marginTop: 2, padding: '10px' }} type="submit" disabled={busy} className="btn btn-primary">{busy ? 'Submitting…' : 'Submit Query'}</button>
             </form>
           </div>
         </div>

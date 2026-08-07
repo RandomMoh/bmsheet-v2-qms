@@ -136,9 +136,28 @@ export default function Login() {
 
 
           {location.state?.message && location.state.message !== 'Logged out successfully.' && !error && (
-            <div className="anim-fade-in" style={{ marginBottom: 20, padding: '10px 14px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)', color: '#fbbf24', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', flexShrink: 0 }} />
-              {location.state.message}
+            <div className="anim-fade-in" style={{
+              marginBottom: 20,
+              padding: '12px 16px',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              color: '#fef08a',
+              fontSize: 13,
+              fontWeight: 500,
+              lineHeight: 1.5
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, color: '#fbbf24', fontWeight: 700 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', flexShrink: 0, display: 'inline-block' }} />
+                <span>System Notification</span>
+              </div>
+              <div>
+                {location.state.message.includes('CTRL + SHIFT + R') ? (
+                  <>System was updated. Kindly press <kbd style={{ background: '#0f172a', padding: '2px 7px', borderRadius: 4, border: '1px solid #f59e0b', color: '#fbbf24', fontFamily: 'monospace', fontWeight: 700, fontSize: 12 }}>CTRL + SHIFT + R</kbd> then login.</>
+                ) : (
+                  location.state.message
+                )}
+              </div>
             </div>
           )}
 
