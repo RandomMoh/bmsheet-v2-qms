@@ -1690,15 +1690,20 @@ export default function CSRPortal() {
 
   const dueSoonOrders = useMemo(() => {
     try {
-      const now = nowPKT()
+      const nowSec = Math.floor(Date.now() / 1000)
       return (currentOrders || []).filter(o => {
-        if (!o || typeof o['query-received_datetime'] !== 'string') return false
-        const dtStr = o['query-received_datetime'].replace(/-/g, '/')
-        const r = new Date(dtStr)
-        if (isNaN(r.getTime())) return false
-        const hours = parseFloat(o.reminder_hours) || 4
-        const remMs = (r.getTime() + (hours * 3600000)) - now.getTime()
-        return remMs > 0 && remMs <= 30 * 60000
+        if (!o) return false
+        let dl = Number(o._deadline)
+        if (!dl || isNaN(dl)) {
+          if (!o['query-received_datetime']) return false
+          const dtStr = String(o['query-received_datetime']).replace(/-/g, '/')
+          const r = new Date(dtStr)
+          if (isNaN(r.getTime())) return false
+          const hours = parseFloat(o.reminder_hours) || 4
+          dl = Math.floor(r.getTime() / 1000) + Math.floor(hours * 3600)
+        }
+        const remSec = dl - nowSec
+        return remSec <= 1800
       })
     } catch (e) {
       console.error('dueSoonOrders error:', e)
