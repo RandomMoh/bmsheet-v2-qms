@@ -429,3 +429,80 @@ body {
     font-size: 12px !important;
   }
 }
+
+/* ── DUE SOON ALERT BAR ── */
+.due-soon-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--status-warning-bg, rgba(245, 158, 11, 0.08));
+  border: 1px solid var(--status-warning-border, rgba(245, 158, 11, 0.25));
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+@keyframes dueSoonPulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; color: var(--status-danger, #ef4444); }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+.due-soon-pulse {
+  animation: dueSoonPulse 2s infinite ease-in-out;
+  color: var(--status-warning, #f59e0b);
+}
+
+/* ── QUICK NOTE CHIPS ── */
+.chip-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.note-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 14px;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.note-chip:hover {
+  background: var(--accent-primary-alpha, rgba(59, 130, 246, 0.15));
+  border-color: var(--accent-primary, #3b82f6);
+  color: var(--accent-primary, #3b82f6);
+}
+
+.chip-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 14px;
+  background: transparent;
+  border: 1px dashed var(--border-strong, #52525b);
+  color: var(--text-muted, #a1a1aa);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-add-btn:hover {
+  border-color: var(--text-main, #ffffff);
+  color: var(--text-main, #ffffff);
+}
