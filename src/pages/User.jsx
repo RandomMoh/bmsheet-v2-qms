@@ -1689,13 +1689,21 @@ export default function CSRPortal() {
   const loading = !statsQuery.data && statsQuery.isLoading
 
   const dueSoonOrders = useMemo(() => {
-    const now = nowPKT()
-    return (currentOrders || []).filter(o => {
-      if (!o['query-received_datetime']) return false
-      const r = new Date(o['query-received_datetime'].replace(/-/g, '/'))
-      const remMs = (r.getTime() + (parseFloat(o.reminder_hours || 4) * 3600000)) - now.getTime()
-      return remMs > 0 && remMs <= 30 * 60000
-    })
+    try {
+      const now = nowPKT()
+      return (currentOrders || []).filter(o => {
+        if (!o || typeof o['query-received_datetime'] !== 'string') return false
+        const dtStr = o['query-received_datetime'].replace(/-/g, '/')
+        const r = new Date(dtStr)
+        if (isNaN(r.getTime())) return false
+        const hours = parseFloat(o.reminder_hours) || 4
+        const remMs = (r.getTime() + (hours * 3600000)) - now.getTime()
+        return remMs > 0 && remMs <= 30 * 60000
+      })
+    } catch (e) {
+      console.error('dueSoonOrders error:', e)
+      return []
+    }
   }, [currentOrders])
 
   const dashOrdersData = dashQuery.data?.data || (Array.isArray(dashQuery.data) ? dashQuery.data : [])
