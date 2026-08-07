@@ -95,7 +95,7 @@ if ($active_res) {
         if (!isset($seen_users[$uKey])) {
             $seen_users[$uKey] = true;
             $rawRole = !empty($r['db_role']) ? $r['db_role'] : (!empty($r['session_role']) ? $r['session_role'] : 'CSR');
-            $cleanRole = (strtolower($rawRole) === 'user' || strtolower($rawRole) === 'csr') ? 'CSR' : ucfirst($rawRole);
+            $cleanRole = (strtolower($rawRole) === 'user' || strtolower($rawRole) === 'csr') ? 'CSR' : $rawRole;
 
             $active_users_list[] = [
                 'user_id' => $r['user_id'],
