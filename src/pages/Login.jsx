@@ -128,9 +128,14 @@ export default function Login() {
       <div className="login-right-panel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-base)', padding: '48px 32px', minHeight: '100vh' }}>
         <div className="anim-fade-up login-card" style={{ width: '100%', maxWidth: 400, backgroundColor: 'var(--bg-panel)', boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-subtle)', padding: '44px 40px' }}>
 
-          <div style={{ marginBottom: 32 }}>
+          <div style={{ marginBottom: 28 }}>
             <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text-main)', margin: '0 0 6px' }}>Welcome back</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-faint)', margin: 0 }}>Sign in to access your dashboard</p>
+            <p style={{ fontSize: 14, color: 'var(--text-faint)', margin: '0 0 10px' }}>Sign in to access your dashboard</p>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--status-warning)', fontWeight: 500, background: 'var(--status-warning-bg)', border: '1px solid var(--status-warning-border)', padding: '4px 10px', borderRadius: 6 }}>
+              <span>💡 Tip: Press</span>
+              <kbd className="login-update-kbd" style={{ fontSize: 11, padding: '1px 5px' }}>CTRL + SHIFT + R</kbd>
+              <span>then login</span>
+            </div>
           </div>
 
 
