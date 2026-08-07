@@ -649,4 +649,67 @@ body {
 .deadline-range-slider::-webkit-slider-thumb:active {
   cursor: grabbing;
   transform: scale(1.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 6px var(--accent-glow);
+}
+
+/* ── REVAMPED DATE & DATETIME-LOCAL INPUTS ── */
+.inp[type="date"],
+.inp[type="datetime-local"],
+.date-picker-inp {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 9px 12px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-input, rgba(15, 23, 42, 0.6));
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.15));
+  color: var(--text-main, #f8fafc);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.inp[type="date"]:hover,
+.inp[type="datetime-local"]:hover,
+.date-picker-inp:hover {
+  border-color: var(--accent-primary, #3b82f6);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.inp[type="date"]:focus,
+.inp[type="datetime-local"]:focus,
+.date-picker-inp:focus {
+  outline: none;
+  border-color: var(--accent-primary, #3b82f6);
+  box-shadow: 0 0 0 3px var(--accent-primary-alpha, rgba(59, 130, 246, 0.25));
+  transform: translateY(-1px);
+}
+
+/* Custom Calendar & Clock Picker Icon inside Browser Inputs */
+.inp[type="date"]::-webkit-calendar-picker-indicator,
+.inp[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.date-picker-inp::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) sepia(0.2) saturate(2) hue-rotate(190deg);
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 2px;
+  border-radius: 4px;
+  transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.inp[type="date"]::-webkit-calendar-picker-indicator:hover,
+.inp[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+.date-picker-inp::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
+  filter: invert(0.9) sepia(0.5) saturate(5) hue-rotate(195deg);
+}
+
+/* Valid date value left accent border indicator */
+.inp[type="date"]:not(:placeholder-shown),
+.inp[type="datetime-local"]:valid {
+  border-left: 3px solid var(--accent-primary, #3b82f6);
 }
