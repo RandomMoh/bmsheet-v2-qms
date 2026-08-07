@@ -85,11 +85,17 @@ if (mysqli_num_rows($q) > 0) {
         }
 
         $deployVersion = '1';
-        if (file_exists(__DIR__ . '/version.json')) {
-            $vData = json_decode(file_get_contents(__DIR__ . '/version.json'), true);
+        $vFile = __DIR__ . '/version.json';
+        $indexPath = __DIR__ . '/../index.html';
+        if (file_exists($vFile)) {
+            clearstatcache(true, $vFile);
+            $vData = json_decode(file_get_contents($vFile), true);
             if (!empty($vData['version'])) {
                 $deployVersion = (string)$vData['version'];
             }
+        } else if (file_exists($indexPath)) {
+            clearstatcache(true, $indexPath);
+            $deployVersion = (string)filemtime($indexPath);
         }
 
         logActivity('Login', $userRole . ' logged in: ' . $row['dname']);

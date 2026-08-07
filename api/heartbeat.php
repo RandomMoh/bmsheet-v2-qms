@@ -37,12 +37,16 @@ $conn->query("DELETE FROM `active_sessions` WHERE `last_active` < '$cutoff'");
 
 $deployVersion = '1';
 $vFile = __DIR__ . '/version.json';
+$indexPath = __DIR__ . '/../index.html';
 if (file_exists($vFile)) {
     clearstatcache(true, $vFile);
     $vData = json_decode(file_get_contents($vFile), true);
     if (!empty($vData['version'])) {
         $deployVersion = (string)$vData['version'];
     }
+} else if (file_exists($indexPath)) {
+    clearstatcache(true, $indexPath);
+    $deployVersion = (string)filemtime($indexPath);
 }
 
 echo json_encode(['status' => 'success', 'timestamp' => $now, 'role' => $role, 'deploy_version' => $deployVersion]);

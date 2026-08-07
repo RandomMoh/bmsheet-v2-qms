@@ -2179,7 +2179,7 @@ export default function CSRPortal() {
           if (!currentDeployVer) {
             sessionStorage.setItem('qmsDeployVersion', data.deploy_version)
           } else if (currentDeployVer !== data.deploy_version) {
-            logout('System was updated. Kindly press CTRL + SHIFT + R then login.')
+            logout('System was updated.')
             return
           }
         }
