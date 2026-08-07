@@ -2773,8 +2773,8 @@ export default function CSRPortal() {
 
       {/* ═══ NEW QUERY MODAL ═══ */}
       {open && (<>
-        <div className="overlay" onClick={() => !busy && setOpen(false)} />
-        <div className="dialog-wrap" onClick={() => !busy && setOpen(false)}>
+        <div className="overlay" />
+        <div className="dialog-wrap">
           <div className="dialog scale-in" style={{ maxWidth: 560, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head" style={{ padding: '14px 20px', flexShrink: 0 }}>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} className="dialog-title-icon" />New Query</h2>
@@ -2837,8 +2837,8 @@ export default function CSRPortal() {
 
       {/* ═══ ORDER DETAIL MODAL ═══ */}
       {det && (<>
-        <div className="overlay" onClick={() => !dBusy && setDet(null)} />
-        <div className="dialog-wrap" onClick={() => !dBusy && setDet(null)}>
+        <div className="overlay" />
+        <div className="dialog-wrap">
           <div className="dialog scale-in" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head">
               <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} className="dialog-title-icon" />Order #{det.id}</h2>
@@ -2882,8 +2882,8 @@ export default function CSRPortal() {
 
       {/* ═══ EXTEND DEADLINE ═══ */}
       {ext && (<>
-        <div className="overlay" onClick={() => !extBusy && setExt(null)} />
-        <div className="dialog-wrap" onClick={() => !extBusy && setExt(null)}>
+        <div className="overlay" />
+        <div className="dialog-wrap">
           <div className="dialog scale-in" style={{ maxWidth: 440, padding: 24 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2913,8 +2913,8 @@ export default function CSRPortal() {
 
       {/* ═══ RESOLVE ISSUE ═══ */}
       {resOrd && (<>
-        <div className="overlay" onClick={() => !resBusy && setResOrd(null)} />
-        <div className="dialog-wrap" onClick={() => !resBusy && setResOrd(null)}>
+        <div className="overlay" />
+        <div className="dialog-wrap">
           <div className="dialog scale-in" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div className="dialog-head">
               <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><CheckCircle2 size={18} className="dialog-title-icon" />Resolve Issue: #{resOrd.id}</h2>
