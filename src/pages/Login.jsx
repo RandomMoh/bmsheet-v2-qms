@@ -139,8 +139,8 @@ export default function Login() {
                 <span className="login-update-alert-dot" />
                 <span>System Notification</span>
               </div>
-              <div>
-                <div>{location.state.message}</div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>
+                {location.state.message.replace(/Kindly press.*$/i, '').trim()}
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600 }}>
                   Kindly press <kbd className="login-update-kbd">CTRL + SHIFT + R</kbd> then login.
                 </div>
