@@ -275,6 +275,61 @@ function getPKTDateStr(d = new Date()) {
   }
 }
 
+function getPKTDatetimeLocalStr(minusMins = 0) {
+  const d = new Date(Date.now() - minusMins * 60000)
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  })
+  const parts = formatter.formatToParts(d)
+  const map = {}
+  parts.forEach(p => map[p.type] = p.value)
+  let hour = map.hour
+  if (hour === '24') hour = '00'
+  return `${map.year}-${map.month}-${map.day}T${hour}:${map.minute}`
+}
+
+function QuickDateRangeFilter({ fromVal, toVal, onChangeRange }) {
+  const today = getPKTDateStr()
+  const setPreset = (type) => {
+    if (type === 'today') {
+      onChangeRange(today, today)
+    } else if (type === 'yesterday') {
+      const y = new Date()
+      y.setDate(y.getDate() - 1)
+      const yd = getPKTDateStr(y)
+      onChangeRange(yd, yd)
+    } else if (type === 'this_week') {
+      const now = new Date()
+      const dayOfWeek = now.getDay() || 7
+      const monday = new Date(now)
+      monday.setDate(now.getDate() - (dayOfWeek - 1))
+      onChangeRange(getPKTDateStr(monday), today)
+    } else if (type === 'this_month') {
+      const now = new Date()
+      const first = new Date(now.getFullYear(), now.getMonth(), 1)
+      onChangeRange(getPKTDateStr(first), today)
+    } else if (type === 'clear') {
+      onChangeRange('', '')
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+      <button type="button" className={`note-chip ${fromVal === today && toVal === today ? 'active' : ''}`} style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => setPreset('today')}>Today</button>
+      <button type="button" className="note-chip" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => setPreset('yesterday')}>Yesterday</button>
+      <button type="button" className="note-chip" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => setPreset('this_week')}>This Week</button>
+      <button type="button" className="note-chip" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => setPreset('this_month')}>This Month</button>
+      {(fromVal || toVal) && (
+        <button type="button" className="chip-add-btn" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => setPreset('clear')}>
+          <X size={10} /> Clear Date
+        </button>
+      )}
+    </div>
+  )
+}
+
 function diffMin(a, b) {
   if (!a || !b) return null
   const da = parsePKT(a)
@@ -2009,7 +2064,7 @@ export default function CSRPortal() {
     const firstDepts = DEPTS_FOR_PROJECT(firstProject)
     const firstDept = firstDepts[0] || ''
     setForm({ medium: MEDIUMS[0], project: firstProject, department: firstDept, type: TYPES[0], order_id: '' })
-    setRecvTime(''); setFirstReplyTime('')
+    setRecvTime(getPKTDatetimeLocalStr(0)); setFirstReplyTime(getPKTDatetimeLocalStr(0))
     setFb(null); setOpen(true)
   }
   const fc = e => {
@@ -2552,6 +2607,9 @@ export default function CSRPortal() {
               {section === 'current' && <>
                 <div><label className="lbl">From</label><input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1) }} className="inp" /></div>
                 <div><label className="lbl">To</label><input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1) }} className="inp" /></div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                  <QuickDateRangeFilter fromVal={fromDate} toVal={toDate} onChangeRange={(f, t) => { setFromDate(f); setToDate(t); setPage(1) }} />
+                </div>
               </>}
               <ProjectSelect selected={selectedProjects} onChange={handleProjectFilterChange} allProjects={PROJECTS} />
               <div style={{ flex: '1 1 200px' }}>
@@ -2691,6 +2749,9 @@ export default function CSRPortal() {
               <div className="toolbar fade-up">
                 <div><label className="lbl">From</label><input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)} className="inp" /></div>
                 <div><label className="lbl">To</label><input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)} className="inp" /></div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                  <QuickDateRangeFilter fromVal={reportFrom} toVal={reportTo} onChangeRange={(f, t) => { setReportFrom(f); setReportTo(t); }} />
+                </div>
                 <div><label className="lbl">Completed By</label>
                   <select value={reportCsr} onChange={e => setReportCsr(e.target.value)} className="inp">
                     <option value="">All Users</option>
@@ -2827,8 +2888,28 @@ export default function CSRPortal() {
                 </select>
               </div>
               <div><label className="lbl">Order ID</label><input name="order_id" value={form.order_id} onChange={fc} placeholder="e.g. ORD-1234" className="inp" /></div>
-              <div><label className="lbl">Received At (optional)</label><input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" /></div>
-              <div><label className="lbl">First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label><input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" /></div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <label className="lbl" style={{ margin: 0 }}>Received At (optional)</label>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setRecvTime(getPKTDatetimeLocalStr(0))}>⚡ Now (PKT)</button>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setRecvTime(getPKTDatetimeLocalStr(10))}>10m ago</button>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setRecvTime(getPKTDatetimeLocalStr(30))}>30m ago</button>
+                  </div>
+                </div>
+                <input type="datetime-local" value={recvTime} onChange={e => setRecvTime(e.target.value)} className="inp" />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <label className="lbl" style={{ margin: 0 }}>First Reply At <span style={{ color: 'var(--status-danger)' }}>*</span></label>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setFirstReplyTime(getPKTDatetimeLocalStr(0))}>⚡ Now (PKT)</button>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setFirstReplyTime(getPKTDatetimeLocalStr(5))}>5m ago</button>
+                    <button type="button" className="note-chip" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setFirstReplyTime(getPKTDatetimeLocalStr(15))}>15m ago</button>
+                  </div>
+                </div>
+                <input type="datetime-local" required value={firstReplyTime} onChange={e => setFirstReplyTime(e.target.value)} className="inp" />
+              </div>
               <div>
                 <label className="lbl">Deadline SLA</label>
                 <DynamicDeadlinePicker
