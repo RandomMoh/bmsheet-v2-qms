@@ -1477,6 +1477,7 @@ export default function CSRPortal() {
   const [selectedProjects, setSelectedProjects] = useState([])
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [filterDueSoon, setFilterDueSoon] = useState(false)
   const PP = 50
 
   const [reportFrom, setReportFrom] = useState('')
@@ -1647,10 +1648,21 @@ export default function CSRPortal() {
   })
 
   const stats = statsQuery.data || null
-  const curOrds = Array.isArray(currentQuery.data) ? currentQuery.data : []
+  const currentOrders = Array.isArray(currentQuery.data) ? currentQuery.data : []
+  const curOrds = currentOrders
   const issOrds = Array.isArray(issueQuery.data) ? issueQuery.data : []
   const doneOrds = Array.isArray(doneQuery.data) ? doneQuery.data : []
   const loading = !statsQuery.data && statsQuery.isLoading
+
+  const dueSoonOrders = useMemo(() => {
+    const now = nowPKT()
+    return (currentOrders || []).filter(o => {
+      if (!o['query-received_datetime']) return false
+      const r = new Date(o['query-received_datetime'].replace(/-/g, '/'))
+      const remMs = (r.getTime() + (parseFloat(o.reminder_hours || 4) * 3600000)) - now.getTime()
+      return remMs > 0 && remMs <= 30 * 60000
+    })
+  }, [currentOrders])
 
   const dashOrdersData = dashQuery.data?.data || (Array.isArray(dashQuery.data) ? dashQuery.data : [])
   const filteredDashOrders = useMemo(() => {
@@ -1747,6 +1759,10 @@ export default function CSRPortal() {
   const list = section === 'current' ? curOrds : section === 'issue' ? issOrds : doneOrds
   const filtered = useMemo(() => {
     let res = list;
+    if (section === 'current' && filterDueSoon) {
+      const dueSoonIds = new Set(dueSoonOrders.map(o => o.id))
+      res = res.filter(o => dueSoonIds.has(o.id))
+    }
     if (selectedProjects.length > 0) {
       res = res.filter(o => selectedProjects.includes(o.project_name))
     }
@@ -1755,7 +1771,7 @@ export default function CSRPortal() {
       res = res.filter(o => Object.values(o).some(v => String(v ?? '').toLowerCase().includes(q)))
     }
     return res;
-  }, [list, search, selectedProjects])
+  }, [list, search, selectedProjects, section, filterDueSoon, dueSoonOrders])
   const totalPages = Math.ceil(filtered.length / PP), visible = filtered.slice((page - 1) * PP, page * PP)
 
   const reportOrders = useMemo(() => {
@@ -2395,6 +2411,23 @@ export default function CSRPortal() {
                   <div className="metric-sub">{c.sub}</div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {section === 'current' && dueSoonOrders.length > 0 && (
+            <div className="due-soon-bar fade-up">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Clock className="due-soon-pulse" size={16} />
+                <span><strong>{dueSoonOrders.length} {dueSoonOrders.length === 1 ? 'query' : 'queries'}</strong> due within 30 minutes</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterDueSoon(!filterDueSoon)}
+                className="btn btn-ghost"
+                style={{ fontSize: 12, padding: '4px 10px', height: 'auto' }}
+              >
+                {filterDueSoon ? 'Show All Queue' : 'View Due Soon Only'}
+              </button>
             </div>
           )}
 
