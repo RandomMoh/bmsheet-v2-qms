@@ -731,7 +731,7 @@ function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr, label
     <div className="deadline-picker-shell">
       <div className="deadline-picker-core">
         {/* Live Target Display */}
-        <div className="deadline-target-card">
+        <div className="deadline-target-card" style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span className="deadline-target-label">{label}</span>
             <span className="deadline-target-time">{targetTimeStr}</span>
@@ -743,7 +743,7 @@ function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr, label
         </div>
 
         {/* Quick Presets */}
-        <div className="deadline-preset-grid">
+        <div className="deadline-preset-grid" style={{ marginBottom: 0 }}>
           {DL_PRESETS.map(p => (
             <button
               key={p.hours}
@@ -754,25 +754,6 @@ function DynamicDeadlinePicker({ hoursValue, onChangeHours, targetTimeStr, label
               {p.label}
             </button>
           ))}
-        </div>
-
-        {/* Interactive Scrub Slider */}
-        <div className="deadline-slider-wrap">
-          <div className="deadline-slider-labels">
-            <span>30m</span>
-            <span>4h (Std)</span>
-            <span>8h</span>
-            <span>12h</span>
-          </div>
-          <input
-            type="range"
-            min="0.5"
-            max="12"
-            step="0.5"
-            value={hoursValue}
-            onChange={e => onChangeHours(parseFloat(e.target.value))}
-            className="deadline-range-slider"
-          />
         </div>
       </div>
     </div>
