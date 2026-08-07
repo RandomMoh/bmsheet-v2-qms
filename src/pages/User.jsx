@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ThemeToggle from '../ThemeToggle'
 import SlackThreadViewer from '../SlackThreadViewer'
 import QueryTimelineModal from '../QueryTimelineModal'
-import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap, Globe, Timer, BarChart2, Search, X, ExternalLink, FileText, ChevronRight } from 'lucide-react'
+import { User as UserIcon, Users, Clock, UserCheck, AlertTriangle, Activity, Radio, CheckCircle2, XCircle, Zap, Globe, Timer, BarChart2, Search, X, Plus, ExternalLink, FileText, ChevronRight } from 'lucide-react'
 
 
 const Icon = memo(function Icon({ paths, size = 16, style = {} }) {
@@ -148,6 +148,7 @@ const DEPTS = ['Floor Plan', 'Photo Enhancement', '3D Floor Plan', 'Video Editin
 const PROJECTS = ALL_PROJECTS
 const TYPES = ['Amend', 'New Order']
 const API = import.meta.env.VITE_API_BASE_URL
+const DEFAULT_CHIPS = ['Missing Files', 'Client Revision', 'Wrong Dimensions', 'Duplicate Query', 'Urgent Priority']
 
 const TableSkeleton = memo(function TableSkeleton({ cols = 8, rows = 6 }) {
   const widths = [
@@ -1512,6 +1513,39 @@ export default function CSRPortal() {
   const [dBusy, setDBusy] = useState(false)
   const [dFb, setDFb] = useState(null)
 
+  const [customChips, setCustomChips] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('qms_custom_note_chips')) || []
+    } catch { return [] }
+  })
+
+  const addCustomChip = () => {
+    const text = prompt('Enter custom note chip label:')
+    if (text && text.trim()) {
+      const cleaned = text.trim()
+      if (!DEFAULT_CHIPS.includes(cleaned) && !customChips.includes(cleaned)) {
+        const next = [...customChips, cleaned]
+        setCustomChips(next)
+        localStorage.setItem('qms_custom_note_chips', JSON.stringify(next))
+      }
+    }
+  }
+
+  const removeCustomChip = (chipToRemove, e) => {
+    e.stopPropagation()
+    const next = customChips.filter(c => c !== chipToRemove)
+    setCustomChips(next)
+    localStorage.setItem('qms_custom_note_chips', JSON.stringify(next))
+  }
+
+  const appendChip = (chipText) => {
+    setDNotes(prev => {
+      if (!prev || !prev.trim()) return chipText
+      if (prev.includes(chipText)) return prev
+      return `${prev.trim()}, ${chipText}`
+    })
+  }
+
   const [resOrd, setResOrd] = useState(null)
   const [resText, setResText] = useState('')
   const [resBusy, setResBusy] = useState(false)
@@ -2750,7 +2784,23 @@ export default function CSRPortal() {
                   <div key={l} className="detail-cell"><div className="detail-cell-label">{l}</div><div className="detail-cell-val">{v || '—'}</div></div>
                 ))}
               </div>
-              <div><label className="lbl">Notes / Issue Description</label><textarea value={dNotes} onChange={e => setDNotes(e.target.value)} rows={3} placeholder="Add notes…" className="inp" style={{ resize: 'none' }} /></div>
+              <div>
+                <label className="lbl">Notes / Issue Description</label>
+                <div className="chip-container">
+                  {DEFAULT_CHIPS.concat(customChips).map(chip => (
+                    <span key={chip} className="note-chip" onClick={() => appendChip(chip)}>
+                      {chip}
+                      {customChips.includes(chip) && (
+                        <X size={12} onClick={e => removeCustomChip(chip, e)} style={{ marginLeft: 2, opacity: 0.6 }} />
+                      )}
+                    </span>
+                  ))}
+                  <button type="button" className="chip-add-btn" onClick={addCustomChip}>
+                    <Plus size={12} /> Add
+                  </button>
+                </div>
+                <textarea value={dNotes} onChange={e => setDNotes(e.target.value)} rows={3} placeholder="Add notes…" className="inp" style={{ resize: 'none' }} />
+              </div>
               {dFb && <div className={`fb ${dFb.ok ? 'fb-ok' : 'fb-err'}`}>{dFb.msg}</div>}
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => submitAction('complete')} disabled={dBusy} className="btn btn-primary" style={{ flex: 1, padding: 11 }}>Mark Complete</button>
