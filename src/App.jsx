@@ -27,8 +27,8 @@ const Loader = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CursorTrail />
       <BrowserRouter basename="/qms_react/">
+        <CursorTrail />
         <Suspense fallback={<Loader />}>
           <Routes>
             <Route path="/" element={<Login />} />
