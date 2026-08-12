@@ -1,15 +1,25 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import DevCursorTrail from './DevCursorTrail';
 
 /**
  * CursorTrail - Premium, Hardware-Accelerated, Theme-Dynamic Cursor Trail Component
  * Features:
- * - Fluid lerped spring physics with trailing ribbon points
+ * - Automatically renders DevCursorTrail on /dev terminal route
+ * - Fluid lerped spring physics with trailing ribbon points on standard pages
  * - Theme-reactive (observes dark/light class changes on html element)
  * - Click particle explosion ripple
  * - Magnetic hover expansion on interactive elements (buttons, inputs, links)
  * - Auto-disables on touch devices & reduced-motion settings
  */
 export default function CursorTrail() {
+  const location = useLocation();
+  const isDevPage = location && location.pathname && location.pathname.includes('/dev');
+
+  if (isDevPage) {
+    return <DevCursorTrail />;
+  }
+
   const canvasRef = useRef(null);
 
   useEffect(() => {
