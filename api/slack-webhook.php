@@ -430,7 +430,14 @@ function slackPost($url, $postPayload, $token) {
     $res = curl_exec($sh);
     $err = curl_error($sh);
     curl_close($sh);
-    if ($err) debugLog("Slack API error: $err");
+    if ($err) {
+        debugLog("Slack API cURL error ($url): $err");
+    } else if ($res) {
+        $json = json_decode($res, true);
+        if (isset($json['ok']) && $json['ok'] === false) {
+            debugLog("Slack API error ($url): " . ($json['error'] ?? 'unknown') . " | payload: " . json_encode($postPayload));
+        }
+    }
     return $res;
 }
 

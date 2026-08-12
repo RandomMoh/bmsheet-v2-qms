@@ -17,7 +17,7 @@ mysqli_set_charset($conn, 'utf8mb4');
 
 define('GROQ_API_KEY', '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');
 
-define('SLACK_BOT_TOKEN_FALLBACK', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+define('SLACK_BOT_TOKEN_FALLBACK', '');
 
 function resolveShiftToken($ws_row) {
     $hour = (int)date('G');

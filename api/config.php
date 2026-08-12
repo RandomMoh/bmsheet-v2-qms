@@ -125,10 +125,10 @@ function logActivity($action, $details) {
 }
 
 define('GEMINI_API_KEY', 'AQ.Ab8RN6LsnzOeSddgv1jmpWiZ_u8jdWXbPMp0PR5xn3e4CaQSsQ');
-define('SLACK_BOT_TOKEN', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
-define('SLACK_TOKEN_SHIFT1', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
-define('SLACK_TOKEN_SHIFT2', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
-define('SLACK_TOKEN_SHIFT3', 'xoxb-2056924731457-10727441782816-ONexPALq6C1CYO6LPiAnsIiH');
+define('SLACK_BOT_TOKEN', '');
+define('SLACK_TOKEN_SHIFT1', '');
+define('SLACK_TOKEN_SHIFT2', '');
+define('SLACK_TOKEN_SHIFT3', '');
 
 /**
  * IP-based Rate Limiter (locks after $maxAttempts failed attempts within $decaySeconds)
