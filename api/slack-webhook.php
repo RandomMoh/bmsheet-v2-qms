@@ -67,6 +67,9 @@ if (isset($payload['type']) && $payload['type'] === 'url_verification') {
     exit;
 }
 
+// Send instant HTTP 200 OK response to Slack before any DB or AI processing
+ackSlack();
+
 $team_id = isset($payload['team_id']) ? $payload['team_id'] : '';
 $workspace_id = null;
 $bot_token = SLACK_BOT_TOKEN_FALLBACK;
