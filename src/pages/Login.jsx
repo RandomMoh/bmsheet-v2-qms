@@ -128,17 +128,6 @@ export default function Login() {
       <div className="login-right-panel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-base)', padding: '48px 32px', minHeight: '100vh' }}>
         <div className="anim-fade-up login-card" style={{ width: '100%', maxWidth: 400, backgroundColor: 'var(--bg-panel)', boxShadow: 'var(--shadow-lg)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-subtle)', padding: '44px 40px' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
-            {[1, 2, 3, 4].map(idx => (
-              <svg key={idx} width="40" height="26" viewBox="0 0 900 600" style={{ borderRadius: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <rect width="900" height="600" fill="#01411C"/>
-                <rect width="225" height="600" fill="#FFFFFF"/>
-                <path d="M 520,135 A 190,190 0 1,0 660,430 A 175,175 0 1,1 520,135" fill="#FFFFFF"/>
-                <polygon points="585,190 600,240 650,240 610,270 625,320 585,290 545,320 560,270 520,240 570,240" fill="#FFFFFF"/>
-              </svg>
-            ))}
-          </div>
-
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text-main)', margin: '0 0 6px' }}>Welcome back</h2>
             <p style={{ fontSize: 14, color: 'var(--text-faint)', margin: 0 }}>Sign in to access your dashboard</p>
