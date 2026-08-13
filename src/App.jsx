@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import Login from './pages/Login'
 import CursorTrail from './CursorTrail'
+import PixelPakFlagsOverlay from './PixelPakFlagsOverlay'
 const CSRDashboard = lazy(() => import('./pages/User'))
 const Dev = lazy(() => import('./pages/Dev'))
 
@@ -29,6 +30,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter basename="/qms_react/">
         <CursorTrail />
+        <PixelPakFlagsOverlay />
         <Suspense fallback={<Loader />}>
           <Routes>
             <Route path="/" element={<Login />} />
