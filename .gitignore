@@ -33,3 +33,7 @@ fix_perms.py
 # Admin & Deployment Scripts
 *.py
 *.sql
+
+# Secret config files (real keys live on cPanel only, deploy via SCP)
+api/config.php
+api/webhook-config.php
