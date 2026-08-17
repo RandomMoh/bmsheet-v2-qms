@@ -339,79 +339,85 @@ if ($subtype === 'file_share' && strlen($cleanText) < 3) {
 function callGroq($prompt) {
     global $conn;
     $url  = 'https://api.groq.com/openai/v1/chat/completions';
-    $body = json_encode([
-        'model' => 'llama-3.1-8b-instant',
-        'messages' => [
-            ['role' => 'system', 'content' => 'You output strictly JSON format.'],
-            ['role' => 'user', 'content' => $prompt]
-        ],
-        'response_format' => ['type' => 'json_object'],
-        'temperature' => 0.1,
-    ]);
+    $models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini'];
 
-    $ch = curl_init($url);
-    $headers = [];
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . GROQ_API_KEY
-        ],
-        CURLOPT_POSTFIELDS     => $body,
-        CURLOPT_TIMEOUT        => 20,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0,
-        CURLOPT_HEADERFUNCTION => function($curl, $header) use (&$headers) {
-            $len = strlen($header);
-            $parts = explode(':', $header, 2);
-            if (count($parts) == 2) {
-                $headers[strtolower(trim($parts[0]))] = trim($parts[1]);
+    foreach ($models as $model) {
+        $body = json_encode([
+            'model' => $model,
+            'messages' => [
+                ['role' => 'system', 'content' => 'You output strictly JSON format.'],
+                ['role' => 'user', 'content' => $prompt]
+            ],
+            'response_format' => ['type' => 'json_object'],
+            'temperature' => 0.1,
+        ]);
+
+        $ch = curl_init($url);
+        $headers = [];
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . GROQ_API_KEY
+            ],
+            CURLOPT_POSTFIELDS     => $body,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_HEADERFUNCTION => function($curl, $header) use (&$headers) {
+                $len = strlen($header);
+                $parts = explode(':', $header, 2);
+                if (count($parts) == 2) {
+                    $headers[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+                return $len;
             }
-            return $len;
+        ]);
+        $response = curl_exec($ch);
+        $curlErr  = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (isset($headers['x-ratelimit-remaining-requests']) && isset($headers['x-ratelimit-remaining-tokens'])) {
+            $req = (int)$headers['x-ratelimit-remaining-requests'];
+            $tok = (int)$headers['x-ratelimit-remaining-tokens'];
+            mysqli_query($conn, "UPDATE api_usage SET remaining_requests = $req, remaining_tokens = $tok WHERE id=1");
         }
-    ]);
-    $response = curl_exec($ch);
-    $curlErr  = curl_error($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
-    if (isset($headers['x-ratelimit-remaining-requests']) && isset($headers['x-ratelimit-remaining-tokens'])) {
-        $req = (int)$headers['x-ratelimit-remaining-requests'];
-        $tok = (int)$headers['x-ratelimit-remaining-tokens'];
-        mysqli_query($conn, "UPDATE api_usage SET remaining_requests = $req, remaining_tokens = $tok WHERE id=1");
+        if ($curlErr || !$response) {
+            debugLog("Groq ($model) cURL error: $curlErr - trying fallback");
+            continue;
+        }
+        if ($httpCode !== 200) {
+            debugLog("Groq ($model) HTTP $httpCode: " . substr($response, 0, 200) . " - trying fallback");
+            continue;
+        }
+
+        $result = json_decode($response, true);
+        $aiText = $result['choices'][0]['message']['content'] ?? null;
+
+        if (!$aiText) {
+            debugLog("Groq ($model) returned no text. Response: " . substr($response, 0, 300));
+            continue;
+        }
+
+        $aiText = preg_replace('/```(?:json)?\s*/i', '', $aiText);
+        $aiText = trim($aiText);
+        preg_match('/\{.*\}/s', $aiText, $matches);
+        $cleanJson = $matches[0] ?? $aiText;
+        $parsed    = json_decode($cleanJson, true);
+
+        if (!is_array($parsed)) {
+            debugLog("Groq ($model) JSON parse failed. Raw: " . substr($aiText, 0, 300));
+            continue;
+        }
+
+        return array_change_key_case($parsed, CASE_LOWER);
     }
 
-    if ($curlErr || !$response) {
-        debugLog("Groq cURL error: $curlErr");
-        return null;
-    }
-    if ($httpCode !== 200) {
-        debugLog("Groq HTTP $httpCode: " . substr($response, 0, 200));
-        return null;
-    }
-
-    $result = json_decode($response, true);
-    $aiText = $result['choices'][0]['message']['content'] ?? null;
-
-    if (!$aiText) {
-        debugLog("Groq returned no text. Response: " . substr($response, 0, 300));
-        return null;
-    }
-
-    $aiText = preg_replace('/```(?:json)?\s*/i', '', $aiText);
-    $aiText = trim($aiText);
-    preg_match('/\{.*\}/s', $aiText, $matches);
-    $cleanJson = $matches[0] ?? $aiText;
-    $parsed    = json_decode($cleanJson, true);
-
-    if (!is_array($parsed)) {
-        debugLog("Groq JSON parse failed. Raw: " . substr($aiText, 0, 300));
-        return null;
-    }
-
-    return array_change_key_case($parsed, CASE_LOWER);
+    return null;
 }
 
 function slackPost($url, $postPayload, $token) {
