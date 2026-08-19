@@ -37,3 +37,6 @@ fix_perms.py
 # Secret config files (real keys live on cPanel only, deploy via SCP)
 api/config.php
 api/webhook-config.php
+
+graphify-out/
+
